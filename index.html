@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Film Archive">
+  <title>Film Archive</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- COLORS & BASICS ---------- */
+    :root {
+      --bg: #0d0d0f;
+      --card: #17171b;
+      --line: #26262c;
+      --text: #ecebe6;
+      --muted: #8d8b85;
+      --gold: #d4af5a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", system-ui, sans-serif;
+      padding: 32px 16px 64px;
+    }
+    main { max-width: 640px; margin: 0 auto; }
+
+    /* ---------- HEADER ---------- */
+    .eyebrow {
+      color: var(--gold);
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-family: "Playfair Display", serif;
+      font-size: 40px;
+      margin: 6px 0 4px;
+    }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+    /* ---------- THE LIST ---------- */
+    .row {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      align-items: baseline;
+      gap: 12px;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--line);
+    }
+    .year { color: var(--gold); font-variant-numeric: tabular-nums; }
+    .title { font-family: "Playfair Display", serif; font-size: 19px; }
+    .ceremony { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .status { color: var(--muted); padding: 20px 4px; }
+  </style>
+</head>
+
+<body>
+  <main>
+    <p class="eyebrow">Academy Awards</p>
+    <h1>Best Picture</h1>
+    <p class="subtitle" id="subtitle">Every winner, newest first</p>
+
+    <div id="list"><p class="status">Loading winners…</p></div>
+  </main>
+
+  <script>
+    // This is the question we ask Wikidata (a free, public movie database).
+    // In plain English: "Give me every film that received the Academy Award
+    // for Best Picture, its title, release year, and which ceremony it was."
+    // "en,mul" means: use the English title, or the title shared across all languages.
+    const question = `
+      SELECT ?film ?filmLabel (MIN(YEAR(?released)) AS ?year) (SAMPLE(?ceremonyName) AS ?ceremony) WHERE {
+        ?film p:P166 ?award .
+        ?award ps:P166 wd:Q102427 .
+        MINUS { ?film wdt:P31 wd:Q5 }
+        OPTIONAL { ?film wdt:P577 ?released }
+        OPTIONAL {
+          ?award pq:P805 ?ceremonyItem .
+          ?ceremonyItem rdfs:label ?ceremonyName .
+          FILTER(LANG(?ceremonyName) IN ("en", "mul"))
+        }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
+      }
+      GROUP BY ?film ?filmLabel
+    `;
+
+    const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(question);
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        // Tidy up each result into a simple { title, year, ceremony } object
+        const films = data.results.bindings.map(item => {
+          const year = item.year ? Number(item.year.value) : null;
+          const ceremonyText = item.ceremony ? item.ceremony.value : "";
+          const ceremonyNumber = parseInt(ceremonyText) || (year ? year - 1927 : 0);
+          return {
+            title: item.filmLabel.value,
+            year: year,
+            ceremonyNumber: ceremonyNumber
+          };
+        });
+
+        // Newest winners at the top, sorted by the year shown on each row
+        films.sort((a, b) => ((b.year || 0) - (a.year || 0)) || (b.ceremonyNumber - a.ceremonyNumber));
+
+        // Build one row per film
+        document.getElementById("list").innerHTML = films.map(film => `
+          <div class="row">
+            <span class="year">${film.year ?? ""}</span>
+            <span class="title">${film.title}</span>
+            <span class="ceremony">${ordinal(film.ceremonyNumber)} Oscars</span>
+          </div>
+        `).join("");
+
+        document.getElementById("subtitle").textContent =
+          `All ${films.length} winners, newest first`;
+      })
+      .catch(() => {
+        document.getElementById("list").innerHTML =
+          `<p class="status">Couldn't load the list. Try refreshing in a minute.</p>`;
+      });
+
+    // Turns 87 into "87th", 1 into "1st", and so on
+    function ordinal(n) {
+      const s = ["th", "st", "nd", "rd"], v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+  </script>
+</body>
+</html>
