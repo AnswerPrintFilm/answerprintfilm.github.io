@@ -578,6 +578,7 @@
     .end-credits a { color: inherit; text-decoration: none; }
     .end-credits a:hover { text-decoration: underline; text-underline-offset: 3px; }
     .end-credits p { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .end-credits .credit-disclosure { max-width: 46ch; margin: 8px auto 18px; color: var(--soft); font-size: 14px; line-height: 1.5; }
 
     /* The camera drawing. The reels turn steadily while the film stops and starts
        in the gate, one frame at a time, the way a real camera moves film. */
@@ -691,7 +692,8 @@
     <div class="footer-grid">
       <div class="footer-credit">
         <a class="wordmark" href="#top">Answer Print</a>
-        <p class="footer-maker">Created by Josh Garza</p>
+        <p class="footer-maker">Concept and creative direction by Josh Garza</p>
+        <p>Code written by Claude, an AI model made by Anthropic</p>
         <p>© 2026 Josh Garza</p>
         <button class="text-button footer-about" data-open-about>About Answer Print</button>
       </div>
@@ -808,8 +810,10 @@
 
       <section class="end-credits" aria-label="Credits">
         <dl>
-          <dt>Created by</dt>
+          <dt>Concept and creative direction</dt>
           <dd class="creator">Josh Garza</dd>
+          <dt>Design and code</dt>
+          <dd>Claude, by Anthropic</dd>
           <dt>Award and format data</dt>
           <dd>Wikidata</dd>
           <dt>Ratings, plots, and credits</dt>
@@ -817,6 +821,7 @@
           <dt>Film images</dt>
           <dd><a href="https://www.themoviedb.org">TMDB</a></dd>
         </dl>
+        <p class="credit-disclosure">Answer Print was conceived and directed by Josh Garza. Its code was written by Claude, an AI model made by Anthropic.</p>
         <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
         <p>© 2026 Josh Garza</p>
       </section>
