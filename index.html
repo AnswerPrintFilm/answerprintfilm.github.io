@@ -2,244 +2,356 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Answer Print">
-  <meta name="theme-color" content="#FFFFFF">
+  <meta name="theme-color" content="#000000">
   <title>Answer Print</title>
 
-  <!-- One typeface, Archivo: a plain, sturdy grotesk that also stretches wide for the name -->
+  <!-- One typeface, Archivo, a sturdy modern sans that can also stretch wide for the name -->
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
-
-  <!-- Your keys live in their own little file, so you never have to re-add them when index.html changes -->
-  <script src="config.js"></script>
 
   <style>
     /* =====================================================================
-       COLORS AND SPACING
+       COLORS AND SIZES
        Black and white only. The films bring the color.
        ===================================================================== */
     :root {
-      --paper: #FFFFFF;
-      --ink: #000000;
-      --gray: #6B6B6B;     /* secondary text */
-      --line: #E4E4E4;     /* thin dividing lines */
-      --wash: #F1F1F1;     /* stand-in while an image loads */
-      --side: clamp(16px, 4vw, 48px);
+      --bg: #000;
+      --raised: #161616;     /* award buttons, search box, empty tiles */
+      --raised-hover: #242424;
+      --text: #F2F2F2;
+      --muted: #9C9C9C;
+      --soft: #C4C4C4;       /* text sitting on top of images */
+      --line: rgba(255, 255, 255, 0.1);
+      --side: clamp(16px, 4vw, 40px);
+      --bar: 64px;           /* height of the top bar, film strip included */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { color-scheme: dark; scroll-padding-top: calc(var(--bar) + 64px); }
 
     body {
-      background: var(--paper);
-      color: var(--ink);
+      background: var(--bg);
+      color: var(--text);
       font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
-      font-size: 17px;
-      line-height: 1.5;
+      font-size: 16px;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
     }
 
-    button, select { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-    :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+    button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    svg { display: block; }
 
-    .wrap { max-width: 1320px; margin: 0 auto; padding: 0 var(--side); }
-    .note { color: var(--gray); }
+    .wrap { max-width: 1360px; margin-inline: auto; padding-inline: var(--side); }
+    .note { color: var(--muted); }
     .sr-only {
       position: absolute; width: 1px; height: 1px;
       overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
     }
 
     /* =====================================================================
-       TOP BAR, with a thin strip of film underneath.
-       The strip's perforations run whenever something is loading.
+       TOP BAR, with a thin strip of film along its bottom edge.
+       The strip runs whenever something is loading.
        ===================================================================== */
-    .topbar {
+    .topbar { position: sticky; top: 0; z-index: 10; background: var(--bg); }
+    .topbar-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 64px;
+      height: 56px;
     }
     .wordmark {
-      color: var(--ink);
+      color: var(--text);
       text-decoration: none;
       font-stretch: 125%;
       font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.08em;
+      font-size: 14px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
-    .toplink { color: var(--ink); text-decoration: none; font-size: 15px; }
-    .toplink:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      margin-right: -10px;
+      border-radius: 50%;
+    }
+    .icon-button:hover { background: var(--raised); }
+    .icon-button svg { width: 20px; height: 20px; }
 
     .strip {
-      height: 16px;
-      background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='16'%3E%3Crect x='5' y='3' width='7' height='10' rx='1.6' fill='white'/%3E%3C/svg%3E") 0 0 / 17px 16px repeat-x,
-        var(--ink);
+      height: 8px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8'%3E%3Crect x='4' y='1.5' width='6' height='5' rx='1.2' fill='white' fill-opacity='0.34'/%3E%3C/svg%3E") 0 0 / 14px 8px repeat-x;
     }
-    @keyframes advance { to { background-position: -17px 0, 0 0; } }
-    @media (prefers-reduced-motion: no-preference) {
-      body.is-loading .strip { animation: advance 0.28s linear infinite; }
-    }
+    @keyframes advance { to { background-position: -14px 0; } }
 
     /* =====================================================================
-       SEARCH, front and center
+       THE OPENING: a still from a Best Picture winner, with search on top
        ===================================================================== */
-    .hero { padding-block: clamp(56px, 13vh, 150px) clamp(40px, 7vh, 80px); }
+    .hero {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      min-height: clamp(460px, 72vh, 720px);
+      overflow: hidden;
+    }
+    .hero-image { position: absolute; inset: 0; }
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transform: scale(1.05);
+      transition: opacity 1.2s ease, transform 2.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .hero-image img.ready { opacity: 1; transform: none; }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, var(--bg) 0%, rgba(0, 0, 0, 0.6) 34%, rgba(0, 0, 0, 0.12) 68%, rgba(0, 0, 0, 0.4) 100%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 60%);
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding-block: 120px 52px;
+    }
+    .hero-title {
+      max-width: 13ch;
+      font-size: clamp(40px, 6.2vw, 80px);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 0.98;
+    }
 
     .search {
       display: flex;
-      align-items: flex-end;
-      gap: 16px;
-      border-bottom: 1px solid var(--ink);
+      align-items: center;
+      gap: 12px;
+      max-width: 600px;
+      height: 60px;
+      margin-top: 28px;
+      padding-inline: 22px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: rgba(22, 22, 22, 0.72);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
     }
+    .search:focus-within { border-color: rgba(255, 255, 255, 0.6); }
+    .search > svg { flex: none; width: 20px; height: 20px; color: var(--muted); }
     .search input {
       flex: 1;
       min-width: 0;
-      padding: 0 0 10px;
+      height: 100%;
       border: none;
       background: transparent;
-      color: var(--ink);
+      color: var(--text);
       font: inherit;
-      font-size: clamp(30px, 7.2vw, 92px);
-      font-weight: 500;
-      letter-spacing: -0.035em;
-      line-height: 1.1;
+      font-size: 18px;
     }
-    .search input::placeholder { color: #A0A0A0; }
+    .search input::placeholder { color: #8C8C8C; }
     .search input:focus { outline: none; }
     .search input::-webkit-search-cancel-button { display: none; }
-    .search button { padding-bottom: 16px; font-size: 15px; }
-    .search button:hover { text-decoration: underline; text-underline-offset: 4px; }
-    /* On phones, the keyboard's own Search key does the job, so the button steps aside */
-    @media (max-width: 600px) { .search button { display: none; } }
-
-    .hint { max-width: 58ch; margin-top: 18px; color: var(--gray); text-wrap: pretty; }
-
-    .results { margin-top: clamp(40px, 6vh, 64px); }
-    .results-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 24px;
-      color: var(--gray);
+    .search button {
+      flex: none;
+      height: 42px;
+      padding-inline: 18px;
+      border-radius: 999px;
+      background: var(--text);
+      color: #000;
+      font-weight: 600;
       font-size: 15px;
     }
-    .results-bar button:hover { color: var(--ink); }
+    .hero-sub { max-width: 46ch; margin-top: 14px; color: var(--soft); font-size: 15px; }
+
+    /* The film the opening still comes from. Tap it to open that film. */
+    .feature {
+      position: absolute;
+      right: var(--side);
+      bottom: 52px;
+      max-width: 34ch;
+      text-align: right;
+    }
+    .feature-label { display: block; color: var(--soft); font-size: 13px; }
+    .feature-title { display: block; margin-top: 2px; font-weight: 600; font-size: 15px; line-height: 1.25; }
+    .feature:hover .feature-title { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .feature { top: 24px; bottom: auto; left: var(--side); right: auto; text-align: left; }
+    }
+    @media (max-width: 640px) {
+      .hero { min-height: min(78vh, 600px); }
+      .hero-inner { padding-block: 104px 28px; }
+      .search { height: 54px; padding-inline: 18px 8px; }
+      .search input { font-size: 17px; }
+      .search button { height: 38px; padding-inline: 14px; }
+    }
 
     /* =====================================================================
-       FILM TILES: a still from the film, then the words underneath
+       SEARCH RESULTS
        ===================================================================== */
+    .results:empty { display: none; }
+    .results { padding-block: 8px 32px; }
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px 24px;
+      margin-bottom: 16px;
+    }
+    .section-head h2 {
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+    }
+    .text-button { color: var(--muted); font-size: 14px; }
+    .text-button:hover { color: var(--text); }
+
+    /* =====================================================================
+       AWARD BUTTONS: one row that slides sideways and stays put while you scroll
+       ===================================================================== */
+    .chips-bar {
+      position: sticky;
+      top: var(--bar);
+      z-index: 9;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.86);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+    }
+    .chips-inner { display: flex; align-items: center; gap: 8px; }
+    .chips {
+      display: flex;
+      flex: 1;
+      gap: 8px;
+      min-width: 0;
+      padding-block: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+      mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      flex: none;
+      padding: 8px 15px;
+      border-radius: 999px;
+      background: var(--raised);
+      color: var(--soft);
+      font-size: 14px;
+      white-space: nowrap;
+      transition: background-color 0.15s, color 0.15s;
+    }
+    .chip:hover { background: var(--raised-hover); color: var(--text); }
+    .chip[aria-pressed="true"] { background: var(--text); color: #000; }
+    .chip-arrow {
+      display: none;
+      flex: none;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--raised);
+    }
+    .chip-arrow:hover { background: var(--raised-hover); }
+    .chip-arrow svg { width: 16px; height: 16px; }
+    @media (hover: hover) and (min-width: 900px) {
+      .chip-arrow { display: grid; }
+    }
+
+    /* =====================================================================
+       THE WINNERS
+       ===================================================================== */
+    .winners { padding-block: 28px 72px; }
+    .span-line { color: var(--muted); font-size: 14px; }
+    .decade {
+      margin: 28px 0 10px;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+    }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(270px, 100%), 1fr));
-      align-items: start;
-      gap: 44px 24px;
+      grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+      gap: 10px;
     }
-    .tile { display: block; width: 100%; text-align: left; }
-    .tile-image {
-      display: block;
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    }
+
+    /* One film: its still, with the words laid over the bottom */
+    .tile {
       position: relative;
+      display: block;
+      width: 100%;
       aspect-ratio: 16 / 9;
       overflow: hidden;
-      background: var(--wash);
+      border-radius: 6px;
+      background: var(--raised);
+      text-align: left;
     }
-    .tile-image img {
+    .tile img {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       opacity: 0;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.5s ease, transform 0.6s ease;
     }
-    .tile-image img.ready { opacity: 1; }
-    .tile-when {
+    .tile img.ready { opacity: 1; }
+    button.tile:hover img.ready { transform: scale(1.04); }
+    .tile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.62) 42%, rgba(0, 0, 0, 0) 78%);
+    }
+    .tile.skeleton::after { display: none; }
+    .tile-text {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      padding: 12px 14px;
+    }
+    .tile-year {
       display: block;
-      margin-top: 12px;
-      color: var(--gray);
-      font-size: 14px;
+      color: var(--soft);
+      font-size: 12px;
       font-variant-numeric: tabular-nums;
     }
-    .tile-who {
-      display: block;
-      margin-top: 2px;
-      font-weight: 600;
-      font-size: 19px;
-      line-height: 1.25;
-      letter-spacing: -0.01em;
+    .tile-who, .tile-what {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
-    .tile-what { display: block; margin-top: 3px; color: var(--gray); font-size: 15px; line-height: 1.4; }
-    button.tile:hover .tile-who { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .tile-who { margin-top: 1px; font-weight: 600; font-size: 15px; line-height: 1.22; }
+    .tile-what { margin-top: 2px; color: var(--soft); font-size: 13px; line-height: 1.3; }
 
-    /* =====================================================================
-       THE WINNERS
-       ===================================================================== */
-    .winners { padding-block: 0 clamp(80px, 12vh, 140px); }
-    .rule { border: 0; border-top: 1px solid var(--line); }
-    .winners .rule { margin-bottom: clamp(56px, 10vh, 112px); }
-    .winners-intro { color: var(--gray); max-width: 58ch; }
-
-    .menu {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px 22px;
-      margin-top: 22px;
-    }
-    .menu button { padding: 4px 0; color: var(--gray); font-size: 16px; }
-    .menu button:hover { color: var(--ink); }
-    .menu button[aria-pressed="true"] {
-      color: var(--ink);
-      text-decoration: underline;
-      text-decoration-thickness: 2px;
-      text-underline-offset: 6px;
+    @media (max-width: 560px) {
+      .tile { aspect-ratio: 4 / 5; }
+      .tile-text { padding: 10px; }
+      .tile-who { font-size: 14px; }
+      .tile-what { font-size: 12px; }
     }
 
-    .category-title, .picker {
-      font-size: clamp(40px, 7vw, 92px);
-      font-weight: 600;
-      letter-spacing: -0.035em;
-      line-height: 1;
-    }
-    .category-title { margin-top: clamp(48px, 8vh, 80px); }
-    .picker { display: none; }
-    .span-line { margin-top: 14px; color: var(--gray); }
-
-    .decade {
-      margin: 64px 0 24px;
-      padding-top: 12px;
-      border-top: 1px solid var(--line);
-      color: var(--gray);
-      font-weight: 500;
-      font-size: 14px;
-    }
-    .roll.fresh { animation: fade-in 0.4s ease-out both; }
-
-    /* Phones: the award menu becomes the big title itself. Tap it to pick another award. */
-    @media (max-width: 720px) {
-      .menu, .category-title { display: none; }
-      .picker {
-        display: block;
-        width: 100%;
-        margin-top: 20px;
-        padding-right: 36px;
-        font-size: 40px;
-        appearance: none;
-        -webkit-appearance: none;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Cpath d='M3 6l6 6 6-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") right 4px center / 18px no-repeat;
-        text-overflow: ellipsis;
-      }
-    }
-
-    footer {
-      padding-block: 0 64px;
-      color: var(--gray);
-      font-size: 14px;
-    }
-    footer .rule { margin-bottom: 32px; }
-    footer p { max-width: 72ch; margin-bottom: 10px; }
+    footer { padding-block: 0 48px; color: var(--muted); font-size: 13px; }
+    footer p { max-width: 80ch; margin-top: 8px; }
     footer a { color: inherit; }
+    .rule { margin-bottom: 20px; border: 0; border-top: 1px solid var(--line); }
 
     /* =====================================================================
        THE FILM PAGE (opens over everything)
@@ -247,35 +359,38 @@
     .panel {
       position: fixed;
       inset: 0;
-      z-index: 20;
+      z-index: 30;
       overflow-y: auto;
-      background: var(--paper);
+      background: var(--bg);
       animation: fade-in 0.25s ease-out both;
     }
     .panel[hidden] { display: none; }
 
     .close {
       position: fixed;
-      top: 14px;
-      right: 14px;
+      top: 12px;
+      right: 12px;
       z-index: 2;
-      padding: 9px 16px;
-      border-radius: 999px;
-      background: var(--paper);
-      box-shadow: 0 0 0 1px var(--line);
-      font-size: 15px;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 50%;
+      background: rgba(22, 22, 22, 0.72);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
     }
-    .close:hover { box-shadow: 0 0 0 1px var(--ink); }
+    .close:hover { border-color: rgba(255, 255, 255, 0.6); }
+    .close svg { width: 18px; height: 18px; }
 
-    .film-still {
+    .film-hero {
       position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      max-height: 74vh;
-      overflow: hidden;
-      background: var(--wash);
+      display: flex;
+      align-items: flex-end;
+      min-height: min(72vh, 56.25vw);
     }
-    .film-still img {
+    .film-hero img {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -284,117 +399,154 @@
       opacity: 0;
       transition: opacity 0.6s ease;
     }
-    .film-still img.ready { opacity: 1; }
-    .film-still.no-image { aspect-ratio: auto; height: 72px; background: var(--paper); }
-
-    .film-body { padding-top: clamp(32px, 5vh, 56px); padding-bottom: 120px; }
-    .film-head {
-      display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-      gap: clamp(32px, 6vw, 96px);
+    .film-hero img.ready { opacity: 1; }
+    .film-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, var(--bg) 0%, rgba(0, 0, 0, 0.55) 38%, rgba(0, 0, 0, 0) 75%);
     }
+    .film-hero.no-image { min-height: 0; padding-top: 72px; }
+    .film-hero-text { position: relative; z-index: 1; width: 100%; padding-block: 24px 4px; }
     .film-title {
-      font-size: clamp(38px, 6.4vw, 84px);
+      max-width: 18ch;
+      font-size: clamp(36px, 6vw, 80px);
       font-weight: 600;
       letter-spacing: -0.035em;
-      line-height: 1;
+      line-height: 0.98;
       text-wrap: balance;
     }
     .facts {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px 22px;
-      margin-top: 18px;
-      color: var(--gray);
+      gap: 4px 18px;
+      margin-top: 14px;
+      color: var(--soft);
+      font-size: 15px;
     }
-    .scores {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px 48px;
-      margin-top: 36px;
+    @media (max-width: 640px) {
+      .film-hero { min-height: 58vh; }
     }
+
+    .film-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 44px clamp(32px, 5vw, 80px);
+      padding-block: 28px 96px;
+    }
+    @media (max-width: 860px) {
+      .film-body { grid-template-columns: 1fr; }
+    }
+
+    .scores { display: flex; flex-wrap: wrap; row-gap: 16px; }
+    .score { padding-right: 26px; margin-right: 26px; border-right: 1px solid var(--line); }
+    .score:last-child { padding-right: 0; margin-right: 0; border-right: none; }
     .score-num {
       display: block;
-      font-size: clamp(34px, 4.4vw, 52px);
-      font-weight: 500;
+      font-size: clamp(30px, 3.6vw, 42px);
+      font-weight: 600;
       letter-spacing: -0.03em;
       line-height: 1;
       font-variant-numeric: tabular-nums;
     }
-    .score-source { color: var(--gray); font-size: 14px; }
-    .plot { max-width: 56ch; margin-top: 32px; font-size: 19px; line-height: 1.55; }
+    .score-source { color: var(--muted); font-size: 13px; }
 
-    .people { align-self: end; }
-    .people div { padding: 12px 0; border-top: 1px solid var(--line); }
-    .people dt { color: var(--gray); font-size: 14px; }
-    .people dd { margin-top: 2px; }
+    .plot { max-width: 60ch; margin-top: 24px; color: #E4E4E4; font-size: 17px; line-height: 1.55; }
 
-    .academy { margin-top: clamp(64px, 10vh, 112px); }
-    .academy h3 {
-      font-size: clamp(26px, 3vw, 36px);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      line-height: 1.1;
-    }
-    .academy h4 {
-      margin: 36px 0 8px;
-      color: var(--gray);
-      font-weight: 400;
-      font-size: 15px;
-    }
-    .award {
+    .people { margin-top: 24px; }
+    .people div {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-      gap: 24px;
-      padding: 14px 0;
+      grid-template-columns: 7rem minmax(0, 1fr);
+      gap: 12px;
+      padding: 10px 0;
       border-top: 1px solid var(--line);
     }
-    .award-name { color: var(--gray); }
-    .award-who { font-weight: 500; }
-    .awards-note { margin-top: 20px; }
-    .retry { margin-left: 6px; text-decoration: underline; text-underline-offset: 3px; }
-    .all-awards { margin-top: 32px; color: var(--gray); font-size: 15px; }
+    .people dt { color: var(--muted); font-size: 14px; }
+    .people dd { font-size: 15px; }
 
-    @media (max-width: 760px) {
-      .film-head { grid-template-columns: 1fr; }
-      .award { grid-template-columns: 1fr; gap: 2px; }
-    }
+    /* How the film was made, from Wikidata, with a short note about where it comes from */
+    .specs { margin-top: 28px; }
+    .specs:empty { display: none; }
+    .specs-title { margin-bottom: 6px; color: var(--muted); font-weight: 600; font-size: 13px; }
+    .specs .people { margin-top: 0; }
+    .specs-note { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.45; }
 
+    .academy h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+    .academy h4 { margin: 20px 0 6px; color: var(--muted); font-weight: 600; font-size: 13px; }
+    .award { padding: 10px 0; border-top: 1px solid var(--line); }
+    .award-name { display: block; font-weight: 600; font-size: 15px; }
+    .award-who { display: block; margin-top: 2px; color: var(--muted); font-size: 14px; }
+    .awards-note { margin-top: 14px; color: var(--muted); }
+    .retry { margin-left: 6px; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+    .all-awards { margin-top: 20px; color: var(--muted); font-size: 14px; }
+
+    /* =====================================================================
+       MOTION: the opening still drifts into place once; everything else
+       moves only when you do something
+       ===================================================================== */
     @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: no-preference) {
+      body.is-loading .strip { animation: advance 0.28s linear infinite; }
+      .fresh { animation: fade-in 0.4s ease-out both; }
+    }
     @media (prefers-reduced-motion: reduce) {
-      .roll.fresh, .panel { animation: none; }
-      .tile-image img, .film-still img { transition: none; }
+      .panel { animation: none; }
+      .hero-image img, .tile img, .film-hero img { transition: none; transform: none; }
+      button.tile:hover img.ready { transform: none; }
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap topbar">
-    <a class="wordmark" href="#">Answer Print</a>
-    <a class="toplink" href="#winners">Every winner</a>
-  </div>
-  <div class="strip" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="wordmark" href="#top">Answer Print</a>
+      <button class="icon-button" id="jump-search" aria-label="Search for a film">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>
+      </button>
+    </div>
+    <div class="strip" aria-hidden="true"></div>
+  </header>
 
-  <main>
-    <section class="wrap hero">
-      <form class="search" id="search" role="search">
-        <label for="query" class="sr-only">Search any film</label>
-        <input id="query" type="search" placeholder="What did you just watch?" autocomplete="off" spellcheck="false" enterkeyhint="search">
-        <button type="submit">Search</button>
-      </form>
-      <p class="hint">Search any film to see its ratings, its story, and every Academy Award it won or was nominated for.</p>
-      <div id="results"></div>
+  <main id="top">
+    <section class="hero">
+      <div class="hero-image"><img id="hero-image" alt=""></div>
+      <div class="wrap hero-inner">
+        <h1 class="hero-title">Look up film</h1>
+        <form class="search" id="search" role="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>
+          <label for="query" class="sr-only">Search any film</label>
+          <input id="query" type="search" placeholder="Search any film" autocomplete="off" spellcheck="false" enterkeyhint="search">
+          <button type="submit">Search</button>
+        </form>
+        <p class="hero-sub">Its ratings, its story, and every Academy Award it won or was nominated for.</p>
+        <button class="feature" id="feature" hidden>
+          <span class="feature-label" id="feature-label"></span>
+          <span class="feature-title" id="feature-title"></span>
+        </button>
+      </div>
     </section>
 
+    <section class="wrap results" id="results" aria-live="polite"></section>
+
+    <nav class="chips-bar" aria-label="Award categories">
+      <div class="wrap chips-inner">
+        <button class="chip-arrow" id="chips-back" aria-label="Earlier awards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="chips" id="chips" role="group"></div>
+        <button class="chip-arrow" id="chips-forward" aria-label="More awards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </nav>
+
     <section class="wrap winners" id="winners">
-      <hr class="rule">
-      <p class="winners-intro">Every Academy Award winner, back to the very first ceremony.</p>
-      <div class="menu" id="menu" role="group" aria-label="Award categories"></div>
-      <label for="picker" class="sr-only">Award category</label>
-      <select class="picker" id="picker"></select>
-      <h2 class="category-title" id="category-title">Best Picture</h2>
-      <p class="span-line" id="span-line" aria-live="polite">&nbsp;</p>
-      <div class="roll" id="roll"></div>
+      <div class="section-head">
+        <h2 id="category-title">Best Picture</h2>
+        <p class="span-line" id="span-line" aria-live="polite">&nbsp;</p>
+      </div>
+      <div id="roll"></div>
     </section>
   </main>
 
@@ -406,13 +558,24 @@
 
   <!-- The film page that opens over everything -->
   <div class="panel" id="panel" hidden>
-    <button class="close" id="close">Close</button>
+    <button class="close" id="close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
     <div role="dialog" aria-modal="true" aria-label="Film details" id="panel-content"></div>
   </div>
 
   <script>
     // =====================================================================
-    // 1. THE AWARD CATEGORIES, biggest first
+    // 1. YOUR KEYS
+    //    They live right here, so index.html is the only file you upload.
+    //    To change one, replace the text between its quotation marks.
+    // =====================================================================
+    const OMDB_KEY = "53fe804a";
+    const TMDB_KEY = "7e37fda19793bf3c160e4fb840be46db";
+
+
+    // =====================================================================
+    // 2. THE AWARD CATEGORIES, biggest first
     //    "awards" lists the Wikidata ID for each category. Some categories were
     //    split in the past (for example color and black-and-white cinematography),
     //    so older versions are included with a short label.
@@ -451,16 +614,13 @@
 
 
     // =====================================================================
-    // 2. HELPERS: small tools the rest of the code reuses
+    // 3. HELPERS: small tools the rest of the code reuses
     // =====================================================================
-    const OMDB_KEY = window.OMDB_KEY || "";
-    const TMDB_KEY = window.TMDB_KEY || "";
-    const isKey = key => key && !key.startsWith("PASTE_");
-    const hasOmdb = isKey(OMDB_KEY);
-    const hasTmdb = isKey(TMDB_KEY);
-    const needKeyMessage = `<p class="note">This needs your OMDb key. Add it to config.js in your GitHub folder.</p>`;
+    const hasOmdb = Boolean(OMDB_KEY);
+    const hasTmdb = Boolean(TMDB_KEY);
+    const needKeyMessage = `<p class="note">This needs your OMDb key. Add it near the top of the script in index.html.</p>`;
 
-    // The strip at the top runs while anything is loading
+    // The film strip at the top runs while anything is loading
     let loadingCount = 0;
     function loading(promise) {
       loadingCount++;
@@ -546,10 +706,9 @@
     const tmdbImage = (path, size) => (path ? "https://image.tmdb.org/t/p/" + size + path : "");
 
     // Shows an image once it has loaded, so it fades in instead of popping in
-    function showImage(img, src, srcset) {
-      if (!src) return;
+    function showImage(img, src) {
+      if (!img || !src) return;
       img.onload = () => img.classList.add("ready");
-      if (srcset) img.srcset = srcset;
       img.src = src;
     }
 
@@ -567,7 +726,24 @@
       });
     }
 
-    // Loads tile images only when they scroll into view, a few at a time
+    // One film tile: a still, with the year, the name, and a line underneath
+    function tileHTML(t) {
+      const inside = `
+        <img alt="">
+        <span class="tile-text">
+          ${t.year ? `<span class="tile-year">${safe(t.year)}</span>` : ""}
+          <span class="tile-who">${safe(t.who)}</span>
+          ${t.what ? `<span class="tile-what">${safe(t.what)}</span>` : ""}
+        </span>`;
+      const image = t.image ? ` data-image="${safe(t.image)}"` : "";
+      if (t.imdb) return `<button class="tile" data-movie="${safe(t.imdb)}" data-wikidata="${safe(t.wikidata || "")}"${image}>${inside}</button>`;
+      if (t.tmdb) return `<button class="tile" data-tmdb="${safe(t.tmdb)}"${image}>${inside}</button>`;
+      return `<div class="tile">${inside}</div>`;
+    }
+    const skeletonTiles = count => `<div class="grid">${'<div class="tile skeleton"></div>'.repeat(count)}</div>`;
+
+    // Tiles that already know their image show it right away. The rest look theirs up
+    // only when they scroll into view, a few at a time.
     const imageQueue = [];
     let imagesLoading = 0;
     function nextImage() {
@@ -575,14 +751,7 @@
         const tile = imageQueue.shift();
         imagesLoading++;
         getImages(tile.dataset.movie)
-          .then(images => {
-            const img = tile.querySelector("img");
-            if (images.still) {
-              showImage(img, tmdbImage(images.still, "w780"), `${tmdbImage(images.still, "w300")} 300w, ${tmdbImage(images.still, "w780")} 780w`);
-            } else if (images.poster) {
-              showImage(img, tmdbImage(images.poster, "w500"));
-            }
-          })
+          .then(images => showImage(tile.querySelector("img"), tmdbImage(images.still, "w780") || tmdbImage(images.poster, "w500")))
           .catch(() => {})
           .finally(() => { imagesLoading--; nextImage(); });
       }
@@ -595,11 +764,12 @@
             imageQueue.push(entry.target);
           });
           nextImage();
-        }, { rootMargin: "400px 0px" })
+        }, { rootMargin: "600px 0px" })
       : null;
-    function watchTiles(container) {
+    function fillTileImages(container) {
+      container.querySelectorAll(".tile[data-image]").forEach(tile => showImage(tile.querySelector("img"), tile.dataset.image));
       if (!hasTmdb) return;
-      container.querySelectorAll(".tile[data-movie]").forEach(tile => {
+      container.querySelectorAll(".tile[data-movie]:not([data-image])").forEach(tile => {
         if (tileWatcher) tileWatcher.observe(tile);
         else { imageQueue.push(tile); nextImage(); }
       });
@@ -607,7 +777,7 @@
 
 
     // =====================================================================
-    // 3. SEARCH: results appear as you type
+    // 4. SEARCH: results appear as you type
     // =====================================================================
     const query = document.getElementById("query");
     const results = document.getElementById("results");
@@ -616,7 +786,7 @@
 
     query.addEventListener("input", () => {
       clearTimeout(searchTimer);
-      if (!query.value.trim()) { results.innerHTML = ""; return; }
+      if (!query.value.trim()) { clearSearch(); return; }
       if (hasTmdb) searchTimer = setTimeout(runSearch, 350);
     });
     document.getElementById("search").addEventListener("submit", event => {
@@ -624,7 +794,17 @@
       clearTimeout(searchTimer);
       query.blur();             // tucks the phone keyboard away so you can see the results
       runSearch();
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+    document.getElementById("jump-search").addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      query.focus({ preventScroll: true });
+    });
+
+    function clearSearch() {
+      searchCount++;
+      results.innerHTML = "";
+    }
 
     function runSearch() {
       const words = query.value.trim();
@@ -635,38 +815,33 @@
       loading(found)
         .then(films => {
           if (thisSearch !== searchCount) return;   // you've typed more since
-          if (!films.length) {
-            results.innerHTML = `<div class="results"><p class="note">No films found for “${safe(words)}”. Check the spelling or try fewer words.</p></div>`;
-            return;
-          }
-          results.innerHTML = `
-            <div class="results">
-              <div class="results-bar"><span>${films.length} ${films.length === 1 ? "film" : "films"}</span><button id="clear">Clear</button></div>
-              <div class="grid">${films.map(film => `
-                <button class="tile" ${film.tmdb ? `data-tmdb="${film.tmdb}"` : `data-movie="${safe(film.imdb)}"`}>
-                  <span class="tile-image"><img alt=""></span>
-                  <span class="tile-when">${safe(film.year)}</span>
-                  <span class="tile-who">${safe(film.title)}</span>
-                </button>`).join("")}
-              </div>
+          const head = `
+            <div class="section-head">
+              <h2>${films.length ? `Results for “${safe(words)}”` : `Nothing found for “${safe(words)}”`}</h2>
+              <button class="text-button" id="clear">Clear</button>
             </div>`;
-          results.querySelectorAll(".tile").forEach((tile, i) => showImage(tile.querySelector("img"), films[i].image));
+          results.innerHTML = films.length
+            ? head + `<div class="grid fresh">${films.map(f => tileHTML({ imdb: f.imdb, tmdb: f.tmdb, year: f.year, who: f.title, image: f.image })).join("")}</div>`
+            : head + `<p class="note">Check the spelling, or try fewer words.</p>`;
+          fillTileImages(results);
           document.getElementById("clear").addEventListener("click", () => {
-            results.innerHTML = "";
+            clearSearch();
             query.value = "";
             query.focus();
           });
         })
-        .catch(error => {
+        .catch(() => {
           if (thisSearch !== searchCount) return;
-          results.innerHTML = `<div class="results">${!hasTmdb && !hasOmdb ? needKeyMessage : `<p class="note">Search isn't responding. Check your connection and try again.</p>`}</div>`;
+          results.innerHTML = hasTmdb || hasOmdb
+            ? `<p class="note">Search isn't responding. Check your connection and try again.</p>`
+            : needKeyMessage;
         });
     }
 
     // TMDB search: best matches first, each with a still from the film
     function searchTmdb(words) {
       return askTmdb("/search/movie", { query: words, include_adult: "false" }).then(data =>
-        (data.results || []).slice(0, 12).map(film => ({
+        (data.results || []).slice(0, 15).map(film => ({
           tmdb: film.id,
           title: film.title,
           year: (film.release_date || "").slice(0, 4),
@@ -675,7 +850,7 @@
       );
     }
 
-    // OMDb search, used if there's no TMDB key yet
+    // OMDb search, used only if the TMDB key is missing
     function searchOmdb(words) {
       return askOmdb({ s: words, type: "movie" }).then(data => {
         if (data.Response === "False") {
@@ -688,39 +863,62 @@
 
 
     // =====================================================================
-    // 4. THE WINNERS: load and show one category at a time
+    // 5. THE WINNERS: one award at a time
     // =====================================================================
-    const menu = document.getElementById("menu");
-    const picker = document.getElementById("picker");
+    const chips = document.getElementById("chips");
     const categoryTitle = document.getElementById("category-title");
     const spanLine = document.getElementById("span-line");
     const roll = document.getElementById("roll");
+    const winners = document.getElementById("winners");
     let currentCategory = -1;
 
-    menu.innerHTML = CATEGORIES.map((c, i) => `<button data-category="${i}" aria-pressed="false">${c.short}</button>`).join("");
-    picker.innerHTML = CATEGORIES.map((c, i) => `<option value="${i}">${c.name}</option>`).join("");
-    menu.querySelectorAll("button").forEach(button => button.addEventListener("click", () => showCategory(Number(button.dataset.category))));
-    picker.addEventListener("change", () => showCategory(Number(picker.value)));
+    chips.innerHTML = CATEGORIES.map((c, i) => `<button class="chip" data-category="${i}" aria-pressed="false">${c.short}</button>`).join("");
+    const chipButtons = [...chips.querySelectorAll(".chip")];
+    chipButtons.forEach((chip, i) => chip.addEventListener("click", () => showCategory(i)));
+    document.getElementById("chips-back").addEventListener("click", () => chips.scrollBy({ left: -chips.clientWidth * 0.7, behavior: "smooth" }));
+    document.getElementById("chips-forward").addEventListener("click", () => chips.scrollBy({ left: chips.clientWidth * 0.7, behavior: "smooth" }));
+
+    // Asks for each award's winners only once, even if two parts of the page want them
+    const winnerRequests = {};
+    function winnersFor(category) {
+      if (!winnerRequests[category.slug]) {
+        winnerRequests[category.slug] = getWinners(category).catch(error => {
+          delete winnerRequests[category.slug];
+          throw error;
+        });
+      }
+      return winnerRequests[category.slug];
+    }
 
     function showCategory(index, options = {}) {
       const category = CATEGORIES[index];
       currentCategory = index;
 
-      menu.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", String(i === index)));
-      picker.value = String(index);
+      chipButtons.forEach((chip, i) => chip.setAttribute("aria-pressed", String(i === index)));
+      const chip = chipButtons[index];
+      chips.scrollTo({ left: chip.offsetLeft - chips.clientWidth / 2 + chip.offsetWidth / 2, behavior: options.initial ? "auto" : "smooth" });
+
       categoryTitle.textContent = category.name;
       spanLine.textContent = "Loading the winners…";
-      roll.innerHTML = "";
-      if (!options.initial) history.replaceState(null, "", "#" + category.slug);   // so you can bookmark or share this award
+      roll.innerHTML = skeletonTiles(10);
 
-      loading(getWinners(category))
+      if (!options.initial) {
+        history.replaceState(null, "", "#" + category.slug);   // so you can bookmark or share this award
+        // If you've scrolled down a long list, start the new one from its top
+        const chipsBottom = document.querySelector(".chips-bar").getBoundingClientRect().bottom;
+        if (winners.getBoundingClientRect().top < chipsBottom) winners.scrollIntoView({ behavior: "smooth" });
+      }
+
+      loading(winnersFor(category))
         .then(entries => {
           if (currentCategory !== index) return;   // you picked another award while this one loaded
           drawWinners(category, entries);
         })
         .catch(() => {
           if (currentCategory !== index) return;
-          spanLine.textContent = "Couldn't load these winners from Wikidata. Check your connection, then pick the award again.";
+          spanLine.textContent = "Couldn't load these winners.";
+          roll.innerHTML = `<p class="note">Wikidata didn't answer this time. <button class="retry" id="retry-winners">Try again</button></p>`;
+          document.getElementById("retry-winners").addEventListener("click", () => showCategory(index, { initial: true }));
         });
     }
 
@@ -921,14 +1119,15 @@
     function drawWinners(category, entries) {
       if (!entries.length) {
         spanLine.textContent = "No winners on record yet.";
+        roll.innerHTML = "";
         return;
       }
       const newest = entries[0].year;
       const oldest = entries[entries.length - 1].year;
       const count = new Set(entries.map(e => e.ceremony)).size;
       spanLine.textContent = newest === oldest
-        ? `First awarded for the films of ${newest}.`
-        : `${count} years of winners, from ${oldest} to ${newest}.`;
+        ? `First awarded for the films of ${newest}`
+        : `${count} years of winners, ${oldest} to ${newest}`;
 
       // Group the winners by decade, newest first
       const decades = [];
@@ -938,18 +1137,14 @@
         decades[decades.length - 1].entries.push(entry);
       });
 
-      roll.innerHTML = decades.map(decade => `
+      roll.innerHTML = `<div class="fresh">${decades.map(decade => `
         <h3 class="decade">${decade.name}</h3>
-        <div class="grid">${decade.entries.map(entry => winnerTile(category, entry)).join("")}</div>
-      `).join("");
-
-      roll.classList.remove("fresh");
-      void roll.offsetWidth;   // restarts the fade-in
-      roll.classList.add("fresh");
-      watchTiles(roll);
+        <div class="grid">${decade.entries.map(entry => tileHTML(winnerTile(category, entry))).join("")}</div>
+      `).join("")}</div>`;
+      fillTileImages(roll);
     }
 
-    // One winner: a still from the film, the year, who won, and for what
+    // What one winner's tile says: who won, and for what
     function winnerTile(category, entry) {
       const films = entry.films.map(f => f.title);
       const label = entry.label ? ` (${entry.label})` : "";
@@ -965,27 +1160,44 @@
         who = joinNames(entry.people.length ? entry.people : films);
         what = (entry.people.length ? joinNames(films.length ? films : entry.works) : "") + label;
       }
-
-      const inside = `
-        <span class="tile-image"><img alt=""></span>
-        <span class="tile-when">${safe(entry.year)}</span>
-        <span class="tile-who">${safe(who)}</span>
-        ${what ? `<span class="tile-what">${safe(what.trim())}</span>` : ""}
-      `;
-      const film = entry.films.find(f => f.imdb);
-      return film
-        ? `<button class="tile" data-movie="${safe(film.imdb)}" data-wikidata="${safe(film.wikidata || "")}">${inside}</button>`
-        : `<div class="tile">${inside}</div>`;
+      const film = entry.films.find(f => f.imdb) || {};
+      return { imdb: film.imdb, wikidata: film.wikidata, year: entry.year, who, what: (what || "").trim() };
     }
-
-    // Open the award in the web address (like #best-actor), or start with Best Picture
-    const startAt = CATEGORIES.findIndex(c => "#" + c.slug === location.hash);
-    showCategory(startAt >= 0 ? startAt : 0, { initial: true });
-    if (startAt >= 0) document.getElementById("winners").scrollIntoView();
 
 
     // =====================================================================
-    // 5. THE FILM PAGE
+    // 6. THE OPENING STILL: a different Best Picture winner on every visit
+    // =====================================================================
+    function featureFilm() {
+      if (!hasTmdb) return;
+      winnersFor(CATEGORIES[0]).then(entries => {
+        const picks = entries
+          .map(entry => ({ entry, film: entry.films.find(f => f.imdb) }))
+          .filter(pick => pick.film)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 5);
+
+        const tryPick = i => {
+          if (i >= picks.length) return;
+          const { entry, film } = picks[i];
+          getImages(film.imdb).then(images => {
+            if (!images.still) return tryPick(i + 1);
+            showImage(document.getElementById("hero-image"), tmdbImage(images.still, "w1280"));
+            const feature = document.getElementById("feature");
+            feature.dataset.movie = film.imdb;
+            feature.dataset.wikidata = film.wikidata || "";
+            document.getElementById("feature-label").textContent = `Best Picture, ${entry.year}`;
+            document.getElementById("feature-title").textContent = film.title;
+            feature.hidden = false;
+          }).catch(() => tryPick(i + 1));
+        };
+        tryPick(0);
+      }).catch(() => {});
+    }
+
+
+    // =====================================================================
+    // 7. THE FILM PAGE
     // =====================================================================
     const panel = document.getElementById("panel");
     const panelContent = document.getElementById("panel-content");
@@ -993,7 +1205,7 @@
     let lastClicked = null;
     let openCount = 0;   // counts the films you've opened, so a slow answer for an earlier one is ignored
 
-    // Any click on a film tile opens its page
+    // Any click on a film opens its page
     document.addEventListener("click", event => {
       const tile = event.target.closest("[data-movie], [data-tmdb]");
       if (!tile) return;
@@ -1005,11 +1217,11 @@
       const thisFilm = ++openCount;
       panel.hidden = false;
       panel.scrollTop = 0;
-      document.body.style.overflow = "hidden";   // stop the page behind from scrolling
+      document.body.style.overflow = "hidden";   // stops the page behind from scrolling
       closeButton.focus();
 
-      if (!hasOmdb) { panelContent.innerHTML = `<div class="wrap film-body">${needKeyMessage}</div>`; return; }
-      panelContent.innerHTML = `<div class="wrap film-body"><p class="note">Loading the film…</p></div>`;
+      if (!hasOmdb) { panelContent.innerHTML = `<div class="wrap film-body" style="padding-top:88px">${needKeyMessage}</div>`; return; }
+      panelContent.innerHTML = `<div class="wrap film-body" style="padding-top:88px"><p class="note">Loading the film…</p></div>`;
 
       // Films found through TMDB search only know TMDB's own number, so look up the rest first
       const known = ids.imdb
@@ -1024,36 +1236,38 @@
         .then(film => {
           if (thisFilm !== openCount) return;
           if (!film.imdb) {
-            panelContent.innerHTML = `<div class="wrap film-body"><p class="note">There isn't enough information about this film yet. Try another one.</p></div>`;
+            panelContent.innerHTML = `<div class="wrap film-body" style="padding-top:88px"><p class="note">There isn't enough information about this film yet. Try another one.</p></div>`;
             return;
           }
-          // Ask all three at once: details (OMDb), images (TMDB), and awards (Wikidata)
+          // Ask everything at once: details (OMDb), images (TMDB), and awards and format (Wikidata)
           const awards = getAwards(film.imdb, film.wikidata);
+          const specs = getSpecs(film.imdb, film.wikidata);
           const images = film.images ? Promise.resolve(film.images) : getImages(film.imdb);
           return loading(getFilm(film.imdb)).then(movie => {
             if (thisFilm !== openCount) return;
             panelContent.innerHTML = filmPage(movie);
             if (movie.Response === "False") return;
+            const hero = panelContent.querySelector(".film-hero");
             images.then(found => {
               if (thisFilm !== openCount) return;
-              const frame = panelContent.querySelector(".film-still");
               const src = tmdbImage(found.still, "w1280") || tmdbImage(found.poster, "w780");
-              if (src) showImage(frame.querySelector("img"), src);
-              else frame.classList.add("no-image");
-            }).catch(() => panelContent.querySelector(".film-still").classList.add("no-image"));
+              if (src) showImage(hero.querySelector("img"), src);
+              else hero.classList.add("no-image");
+            }).catch(() => hero.classList.add("no-image"));
             fillAwards(awards, film.imdb, film.wikidata, thisFilm);
+            fillSpecs(specs, thisFilm);
           });
         })
         .catch(() => {
           if (thisFilm !== openCount) return;
-          panelContent.innerHTML = `<div class="wrap film-body"><p class="note">Couldn't load this film. Check your connection and try again.</p></div>`;
+          panelContent.innerHTML = `<div class="wrap film-body" style="padding-top:88px"><p class="note">Couldn't load this film. Check your connection and try again.</p></div>`;
         });
     }
 
     function closeFilm() {
       panel.hidden = true;
       document.body.style.overflow = "";
-      if (lastClicked) lastClicked.focus();
+      if (lastClicked) lastClicked.focus({ preventScroll: true });
     }
     closeButton.addEventListener("click", closeFilm);
     document.addEventListener("keydown", event => {
@@ -1080,11 +1294,74 @@
         })
         .catch(() => {
           if (thisFilm !== openCount) return;
-          box.innerHTML = `<p class="note awards-note">The Academy Awards didn't load this time. <button class="retry" id="retry">Try again</button></p>`;
+          box.innerHTML = `<p class="awards-note">The Academy Awards didn't load this time. <button class="retry" id="retry">Try again</button></p>`;
           document.getElementById("retry").addEventListener("click", () => {
-            box.innerHTML = `<p class="note awards-note">Loading the Academy Awards…</p>`;
+            box.innerHTML = `<p class="awards-note">Loading the Academy Awards…</p>`;
             fillAwards(getAwards(imdbId, wikidataId), imdbId, wikidataId, thisFilm);
           });
+        });
+    }
+
+    // Adds the format details to the open page, if Wikidata has any.
+    // Nearly every film has a color listed, so that alone doesn't count.
+    function fillSpecs(specs, thisFilm) {
+      specs
+        .then(found => {
+          if (thisFilm !== openCount) return;
+          if (!found.format.length && !found.camera.length && !found.ratio.length) return;
+          const color = joinNames(found.color);
+          const rows = [
+            ["Shot on", joinNames(found.format)],
+            ["Camera", joinNames(found.camera)],
+            ["Aspect ratio", joinNames(found.ratio)],
+            ["Color", color.charAt(0).toUpperCase() + color.slice(1)]
+          ].filter(([, value]) => value);
+          document.getElementById("specs").innerHTML = `
+            <h4 class="specs-title">Format</h4>
+            <dl class="people">${rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${safe(value)}</dd></div>`).join("")}</dl>
+            <p class="specs-note"><em>Format details are sourced from Wikidata, a community-maintained database, and may be incomplete or contain occasional errors.</em></p>`;
+        })
+        .catch(() => {});   // if Wikidata doesn't answer, the page simply goes without
+    }
+
+    // Finds a film on Wikidata from its IMDb ID. Films from the award lists
+    // already know their Wikidata ID, so they skip this step.
+    const wikidataIds = {};
+    function findWikidataId(imdbId, wikidataId) {
+      if (/^Q\d+$/.test(wikidataId || "")) return Promise.resolve(wikidataId);
+      if (!wikidataIds[imdbId]) {
+        wikidataIds[imdbId] = askWikidata(`SELECT ?film WHERE { ?film wdt:P345 "${imdbId}" }`, 15)
+          .then(found => (found.length ? found[0].film.value.split("/").pop() : ""))
+          .catch(error => { delete wikidataIds[imdbId]; throw error; });
+      }
+      return wikidataIds[imdbId];
+    }
+
+    // How the film was made, as far as Wikidata knows: the film it was shot on,
+    // the camera, the aspect ratio, and color. Saved for a week.
+    function getSpecs(imdbId, wikidataId) {
+      const saveKey = "answer-print-specs-1-" + imdbId;
+      const saved = remember.get(saveKey, 7);
+      if (saved) return Promise.resolve(saved);
+      return findWikidataId(imdbId, wikidataId)
+        .then(id => !id ? [] : askWikidata(`SELECT ?kind ?valueLabel WHERE {
+          VALUES (?property ?kind) { (wdt:P3803 "format") (wdt:P4082 "camera") (wdt:P2061 "ratio") (wdt:P462 "color") }
+          wd:${id} ?property ?value .
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
+        }`, 15))
+        .then(rows => {
+          const specs = { format: [], camera: [], ratio: [], color: [] };
+          rows.forEach(row => {
+            const value = row.valueLabel ? row.valueLabel.value : "";
+            const list = specs[row.kind.value];
+            if (list && value && !/^Q\d+$/.test(value) && !list.includes(value)) list.push(value);
+          });
+          // Widest aspect ratio first, and "color" before "black-and-white"
+          const width = ratio => { const [w, h] = ratio.split(":").map(Number); return h ? w / h : 0; };
+          specs.ratio.sort((a, b) => width(b) - width(a));
+          specs.color.sort((a, b) => (a === "color" ? -1 : b === "color" ? 1 : 0));
+          remember.set(saveKey, specs);
+          return specs;
         });
     }
 
@@ -1103,14 +1380,7 @@
       const saved = remember.get(saveKey, 7);
       if (saved) return Promise.resolve(saved);
 
-      // Find the film on Wikidata first. Films from the award lists already know
-      // their Wikidata ID, so they skip this step.
-      const findFilm = /^Q\d+$/.test(wikidataId || "")
-        ? Promise.resolve(wikidataId)
-        : askWikidata(`SELECT ?film WHERE { ?film wdt:P345 "${imdbId}" }`, 15)
-            .then(found => (found.length ? found[0].film.value.split("/").pop() : ""));
-
-      return findFilm.then(id => {
+      return findWikidataId(imdbId, wikidataId).then(id => {
         if (!id) return [[], []];   // the film isn't on Wikidata
         const film = "wd:" + id;
 
@@ -1157,7 +1427,7 @@
     // Builds the film page
     function filmPage(movie) {
       if (movie.Response === "False") {
-        return `<div class="wrap film-body"><p class="note">Couldn't load this film. OMDb says: ${safe(movie.Error)}</p></div>`;
+        return `<div class="wrap film-body" style="padding-top:88px"><p class="note">Couldn't load this film. OMDb says: ${safe(movie.Error)}</p></div>`;
       }
 
       const ratings = movie.Ratings || [];
@@ -1173,29 +1443,29 @@
         .filter(([, value]) => clean(value));
 
       return `
-        <div class="film-still"><img alt="A still from ${safe(movie.Title)}"></div>
+        <div class="film-hero">
+          <img alt="A still from ${safe(movie.Title)}">
+          <div class="wrap film-hero-text">
+            <h2 class="film-title">${safe(movie.Title)}</h2>
+            <div class="facts">${facts.map(f => `<span>${safe(f)}</span>`).join("")}</div>
+          </div>
+        </div>
         <div class="wrap film-body">
-          <div class="film-head">
-            <div>
-              <h2 class="film-title">${safe(movie.Title)}</h2>
-              <div class="facts">${facts.map(f => `<span>${safe(f)}</span>`).join("")}</div>
-              <div class="scores">
-                ${scores.map(s => `
-                  <div>
-                    <span class="score-num">${safe(s.value.replace("/100", ""))}</span>
-                    <span class="score-source">${s.source}</span>
-                  </div>`).join("")}
-              </div>
-              ${clean(movie.Plot) ? `<p class="plot">${safe(movie.Plot)}</p>` : ""}
-            </div>
+          <div>
+            ${scores.length ? `<div class="scores">${scores.map(s => `
+              <div class="score">
+                <span class="score-num">${safe(s.value.replace("/100", ""))}</span>
+                <span class="score-source">${s.source}</span>
+              </div>`).join("")}</div>` : ""}
+            ${clean(movie.Plot) ? `<p class="plot">${safe(movie.Plot)}</p>` : ""}
             <dl class="people">
               ${people.map(([role, value]) => `<div><dt>${role}</dt><dd>${safe(value)}</dd></div>`).join("")}
             </dl>
+            <div class="specs" id="specs"></div>
           </div>
-
           <section class="academy">
             <h3>Academy Award Wins and Nominations</h3>
-            <div id="awards-list"><p class="note awards-note">Loading the Academy Awards…</p></div>
+            <div id="awards-list"><p class="awards-note">Loading the Academy Awards…</p></div>
             ${clean(movie.Awards) ? `<p class="all-awards">All awards: ${safe(movie.Awards)}</p>` : ""}
           </section>
         </div>
@@ -1205,12 +1475,12 @@
     // Builds the "Won" and "Also nominated" lists
     function awardList(list) {
       if (!list.won.length && !list.nominated.length) {
-        return `<p class="note awards-note">No Academy Award wins or nominations on record.</p>`;
+        return `<p class="awards-note">No Academy Award wins or nominations on record.</p>`;
       }
       const rows = items => items.map(item => `
         <div class="award">
           <span class="award-name">${safe(item.name)}</span>
-          <span class="award-who">${safe(joinNames(item.people)) || "&nbsp;"}</span>
+          ${item.people.length ? `<span class="award-who">${safe(joinNames(item.people))}</span>` : ""}
         </div>`).join("");
 
       return `
@@ -1218,6 +1488,15 @@
         ${list.nominated.length ? `<h4>Also nominated for ${list.nominated.length}</h4>${rows(list.nominated)}` : ""}
       `;
     }
+
+
+    // =====================================================================
+    // 8. START: open the award in the web address (like #best-actor), or Best Picture
+    // =====================================================================
+    const startAt = CATEGORIES.findIndex(c => "#" + c.slug === location.hash);
+    showCategory(startAt >= 0 ? startAt : 0, { initial: true });
+    if (startAt >= 0) winners.scrollIntoView();
+    featureFilm();
   </script>
 </body>
 </html>
