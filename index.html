@@ -281,12 +281,85 @@
     .text-button:hover { color: var(--text); }
 
     /* =====================================================================
+       POPULAR RIGHT NOW: the five most popular films, ranked
+       ===================================================================== */
+    .popular { padding-block: 40px 56px; }
+    .popular .section-head { align-items: flex-end; margin-bottom: 20px; }
+    .popular .span-line { margin-top: 6px; }
+
+    .segmented { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--raised); }
+    .segmented button { padding: 7px 14px; border-radius: 999px; color: var(--soft); font-size: 14px; white-space: nowrap; }
+    .segmented button:hover { color: var(--text); }
+    .segmented button[aria-pressed="true"] { background: var(--text); color: #000; }
+
+    .top-five { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; list-style: none; }
+    .top-five .note { grid-column: 1 / -1; }
+    .poster-tile { display: block; width: 100%; text-align: left; }
+    .poster-frame {
+      position: relative;
+      display: block;
+      aspect-ratio: 2 / 3;
+      overflow: hidden;
+      border-radius: 6px;
+      background: var(--raised);
+    }
+    .poster-frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.6s ease;
+    }
+    .poster-frame img.ready { opacity: 1; }
+    .poster-tile:hover img.ready { transform: scale(1.04); }
+    .poster-caption {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 10px;
+      align-items: baseline;
+      margin-top: 10px;
+    }
+    .poster-rank { color: var(--soft); font-weight: 300; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+    .poster-title {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-weight: 600;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+    .poster-year { grid-column: 2; color: var(--muted); font-size: 13px; }
+    .poster-tile:hover .poster-title { text-decoration: underline; text-underline-offset: 3px; }
+
+    /* On phones, the five posters slide sideways */
+    @media (max-width: 760px) {
+      .popular .section-head { align-items: flex-start; }
+      .top-five {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: 42%;
+        margin-inline: calc(var(--side) * -1);
+        padding-inline: var(--side);
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: var(--side);
+        scrollbar-width: none;
+      }
+      .top-five::-webkit-scrollbar { display: none; }
+      .top-five li { scroll-snap-align: start; }
+    }
+
+    /* =====================================================================
        AWARD BUTTONS: one row that slides sideways and stays put while you scroll
        ===================================================================== */
     .chips-bar {
       position: sticky;
       top: var(--bar);
       z-index: 9;
+      border-top: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
       background: rgba(0, 0, 0, 0.86);
       -webkit-backdrop-filter: blur(14px);
@@ -530,6 +603,41 @@
 
     .plot { max-width: 60ch; margin-top: 24px; color: #E4E4E4; font-size: 17px; line-height: 1.55; }
 
+    /* For families: a quiet card linking to the film's Common Sense Media review */
+    .family-guide {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      max-width: 560px;
+      margin-top: 24px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      color: var(--text);
+      text-decoration: none;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .family-guide:hover { border-color: rgba(255, 255, 255, 0.5); background: #0E0E0E; }
+    .family-rating {
+      flex: none;
+      display: grid;
+      place-items: center;
+      min-width: 46px;
+      height: 46px;
+      padding: 0 8px;
+      border: 1.5px solid var(--text);
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+    }
+    .family-text { flex: 1; min-width: 0; }
+    .family-label { display: block; color: var(--muted); font-size: 12px; }
+    .family-title { display: block; margin-top: 1px; font-weight: 600; font-size: 15px; }
+    .family-note { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .family-out { flex: none; width: 18px; height: 18px; color: var(--muted); transition: color 0.2s, transform 0.2s; }
+    .family-guide:hover .family-out { color: var(--text); transform: translate(2px, -2px); }
+
     .people { margin-top: 24px; }
     .people div {
       display: grid;
@@ -613,7 +721,7 @@
     @media (prefers-reduced-motion: reduce) {
       .panel { animation: none; }
       .hero-image img, .tile img, .film-hero img { transition: none; transform: none; }
-      button.tile:hover img.ready { transform: none; }
+      button.tile:hover img.ready, .family-guide:hover .family-out { transform: none; }
     }
   </style>
 </head>
@@ -666,6 +774,21 @@
 
     <section class="wrap results" id="results" aria-live="polite"></section>
 
+    <section class="wrap popular" id="popular" aria-labelledby="popular-title">
+      <div class="section-head">
+        <div>
+          <h2 id="popular-title">Popular right now</h2>
+          <p class="span-line" id="popular-note">&nbsp;</p>
+        </div>
+        <div class="segmented" id="popular-tabs" role="group" aria-label="Where people are watching">
+          <button data-list="trending" aria-pressed="true">Everywhere</button>
+          <button data-list="theaters" aria-pressed="false">In theaters</button>
+          <button data-list="streaming" aria-pressed="false">Streaming</button>
+        </div>
+      </div>
+      <ol class="top-five" id="top-five"></ol>
+    </section>
+
     <nav class="chips-bar" aria-label="Award categories">
       <div class="wrap chips-inner">
         <button class="chip-arrow" id="chips-back" aria-label="Earlier awards">
@@ -699,7 +822,7 @@
       </div>
       <div class="footer-notes">
         <p>An answer print is the first finished copy of a film, picture and sound together, made for the filmmakers to approve before it goes out to theaters.</p>
-        <p>Winners, nominations, and format details come from Wikidata, a free public database. Ratings come from OMDb. Film images come from <a href="https://www.themoviedb.org">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB. A brand-new winner can take a few days to show up.</p>
+        <p>Winners, nominations, and format details come from Wikidata, a free public database. Ratings come from OMDb. Film images and the popular lists come from <a href="https://www.themoviedb.org">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB. A brand-new winner can take a few days to show up.</p>
       </div>
     </div>
   </footer>
@@ -798,6 +921,7 @@
 
       <h3>What you'll find</h3>
       <ul class="about-list">
+        <li>The five most popular films right now, in theaters and on streaming</li>
         <li>Every Academy Award winner in 24 categories, back to the first ceremony</li>
         <li>Ratings from IMDb, Rotten Tomatoes, and Metacritic</li>
         <li>Each film's story, director, writers, and cast</li>
@@ -806,7 +930,7 @@
       </ul>
 
       <h3>Where the information comes from</h3>
-      <p>Awards and format details come from Wikidata, a free, community-maintained database. Ratings, plots, and credits come from OMDb, and film images come from TMDB. Because these sources are kept up by people, a detail is occasionally missing or mistaken, and a brand-new winner can take a few days to appear.</p>
+      <p>Awards and format details come from Wikidata, a free, community-maintained database. Ratings, plots, and credits come from OMDb, and film images and the popular lists come from TMDB. Because these sources are kept up by people, a detail is occasionally missing or mistaken, and a brand-new winner can take a few days to appear.</p>
 
       <section class="end-credits" aria-label="Credits">
         <dl>
@@ -818,7 +942,7 @@
           <dd>Wikidata</dd>
           <dt>Ratings, plots, and credits</dt>
           <dd>OMDb</dd>
-          <dt>Film images</dt>
+          <dt>Film images and popular lists</dt>
           <dd><a href="https://www.themoviedb.org">TMDB</a></dd>
         </dl>
         <p class="credit-disclosure">Answer Print was conceived and directed by Josh Garza. Its code was written by Claude, an AI model made by Anthropic.</p>
@@ -1135,6 +1259,95 @@
 
 
     // =====================================================================
+    // 4b. POPULAR RIGHT NOW: the five most popular films, from TMDB.
+    //     Each list is saved for 6 hours, then refreshed.
+    // =====================================================================
+    const daysAgo = days => new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+    const POPULAR_LISTS = {
+      trending: {
+        note: "Trending this week, in theaters and at home",
+        ask: () => askTmdb("/trending/movie/week")
+      },
+      theaters: {
+        note: "The most popular films in U.S. theaters right now",
+        ask: () => askTmdb("/movie/now_playing", { region: "US" })
+      },
+      streaming: {
+        note: "The most popular new films on U.S. streaming services",
+        ask: () => askTmdb("/discover/movie", {
+          watch_region: "US",
+          with_watch_monetization_types: "flatrate",   // included with a subscription, like Netflix or Max
+          "primary_release_date.gte": daysAgo(180),    // from the last six months
+          "vote_count.gte": "200",                     // enough people have seen it to rate it
+          sort_by: "popularity.desc",
+          include_adult: "false"
+        })
+      }
+    };
+
+    const popularTabs = [...document.querySelectorAll("#popular-tabs button")];
+    const topFiveList = document.getElementById("top-five");
+    const popularNote = document.getElementById("popular-note");
+    let popularShowing = "";
+
+    function topFive(name) {
+      const saveKey = "answer-print-popular-1-" + name;
+      const saved = remember.get(saveKey, 0.25);
+      if (saved) return Promise.resolve(saved);
+      return POPULAR_LISTS[name].ask().then(data => {
+        let films = (data.results || []).filter(film => film.poster_path);
+        if (name === "theaters") {
+          // Rank what's playing by popularity, leaving out films too new or small to have many ratings
+          films.sort((a, b) => b.popularity - a.popularity);
+          const known = films.filter(film => film.vote_count >= 50);
+          if (known.length >= 5) films = known;
+        }
+        const five = films.slice(0, 5).map(film => ({
+          tmdb: film.id,
+          title: film.title,
+          year: (film.release_date || "").slice(0, 4),
+          poster: film.poster_path
+        }));
+        remember.set(saveKey, five);
+        return five;
+      });
+    }
+
+    function showPopular(name) {
+      popularShowing = name;
+      popularTabs.forEach(tab => tab.setAttribute("aria-pressed", String(tab.dataset.list === name)));
+      popularNote.textContent = POPULAR_LISTS[name].note;
+      topFiveList.innerHTML = '<li><span class="poster-frame"></span></li>'.repeat(5);
+
+      loading(topFive(name))
+        .then(films => {
+          if (popularShowing !== name) return;   // you picked another list while this one loaded
+          topFiveList.innerHTML = films.map((film, i) => `
+            <li>
+              <button class="poster-tile" data-tmdb="${film.tmdb}">
+                <span class="poster-frame"><img alt="Poster for ${safe(film.title)}"></span>
+                <span class="poster-caption">
+                  <span class="poster-rank">${i + 1}</span>
+                  <span class="poster-title">${safe(film.title)}</span>
+                  <span class="poster-year">${safe(film.year)}</span>
+                </span>
+              </button>
+            </li>`).join("");
+          topFiveList.querySelectorAll(".poster-tile").forEach((tile, i) =>
+            showImage(tile.querySelector("img"), tmdbImage(films[i].poster, "w500")));
+        })
+        .catch(() => {
+          if (popularShowing !== name) return;
+          topFiveList.innerHTML = `<li class="note">This list didn't load. <button class="retry" id="retry-popular">Try again</button></li>`;
+          document.getElementById("retry-popular").addEventListener("click", () => showPopular(name));
+        });
+    }
+
+    popularTabs.forEach(tab => tab.addEventListener("click", () => showPopular(tab.dataset.list)));
+    if (!hasTmdb) document.getElementById("popular").hidden = true;
+
+
+    // =====================================================================
     // 5. THE WINNERS: one award at a time
     // =====================================================================
     const chips = document.getElementById("chips");
@@ -1398,8 +1611,8 @@
       const oldest = entries[entries.length - 1].year;
       const count = new Set(entries.map(e => e.ceremony)).size;
       spanLine.textContent = newest === oldest
-        ? `First awarded for the films of ${newest}`
-        : `${count} years of winners, ${oldest} to ${newest}`;
+        ? `Academy Award winners, first awarded for the films of ${newest}`
+        : `Academy Award winners, ${oldest} to ${newest}`;
 
       // Group the winners by decade, newest first
       const decades = [];
@@ -1938,6 +2151,7 @@
                 <span class="score-source">${s.source}</span>
               </div>`).join("")}</div>` : ""}
             ${clean(movie.Plot) ? `<p class="plot">${safe(movie.Plot)}</p>` : ""}
+            ${familyGuide(movie)}
             <dl class="people">
               ${people.map(([role, value]) => `<div><dt>${role}</dt><dd>${safe(value)}</dd></div>`).join("")}
             </dl>
@@ -1950,6 +2164,24 @@
           </section>
         </div>
       `;
+    }
+
+    // A card that opens the film's Common Sense Media review in a new tab, for parents.
+    // The box on the left shows the film's official rating when it has one.
+    function familyGuide(movie) {
+      const rating = clean(movie.Rated);
+      const badge = /^(G|PG|PG-13|R|NC-17)$/.test(rating) ? `<span class="family-rating">${safe(rating)}</span>` : "";
+      const url = "https://www.commonsensemedia.org/search/" + encodeURIComponent(movie.Title);
+      return `
+        <a class="family-guide" href="${url}" target="_blank" rel="noopener">
+          ${badge}
+          <span class="family-text">
+            <span class="family-label">For families</span>
+            <span class="family-title">Read the Common Sense Media review</span>
+            <span class="family-note">Age guidance and what parents should know, on commonsensemedia.org</span>
+          </span>
+          <svg class="family-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>
+        </a>`;
     }
 
     // Builds the "Won" and "Also nominated" lists
@@ -2008,6 +2240,7 @@
     showCategory(startAt >= 0 ? startAt : 0, { initial: true });
     if (startAt >= 0) winners.scrollIntoView();
     if (location.hash === "#about") openAbout();
+    if (hasTmdb) showPopular("trending");
     featureFilm();
   </script>
 </body>
