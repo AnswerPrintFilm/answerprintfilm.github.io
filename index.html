@@ -101,14 +101,24 @@
     }
     .hero-image { position: absolute; inset: 0; }
     .hero-image img {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center top;   /* keep the top of the picture in frame; any trimming comes off the bottom */
+    }
+    /* The very first still drifts gently into place */
+    .hero-image img.first {
       opacity: 0;
       transform: scale(1.05);
       transition: opacity 1.2s ease, transform 2.6s cubic-bezier(0.2, 0.7, 0.2, 1);
     }
-    .hero-image img.ready { opacity: 1; transform: none; }
+    .hero-image img.first.in { opacity: 1; transform: none; }
+
+    /* The picture itself can be tapped to open the film, so the words on top
+       let taps on empty space fall through to it */
+    .hero.has-feature { cursor: pointer; }
     .hero::after {
       content: "";
       position: absolute;
@@ -122,7 +132,9 @@
       z-index: 1;
       width: 100%;
       padding-block: 120px 52px;
+      pointer-events: none;
     }
+    .hero-inner > * { pointer-events: auto; cursor: auto; }
     .hero-title {
       max-width: 13ch;
       font-size: clamp(40px, 6.2vw, 80px);
@@ -172,7 +184,8 @@
     }
     .hero-sub { max-width: 46ch; margin-top: 14px; color: var(--soft); font-size: 15px; }
 
-    /* The film the opening still comes from. Tap it to open that film. */
+    /* The Best Picture winner on screen, with controls for the slideshow.
+       Tap its name (or the picture) to open that film. */
     .feature {
       position: absolute;
       right: var(--side);
@@ -180,16 +193,60 @@
       max-width: 34ch;
       text-align: right;
     }
+    .feature-open { display: block; margin-left: auto; text-align: inherit; transition: opacity 0.35s ease; }
+    .feature.swapping .feature-open { opacity: 0; }
     .feature-label { display: block; color: var(--soft); font-size: 13px; }
     .feature-title { display: block; margin-top: 2px; font-weight: 600; font-size: 15px; line-height: 1.25; }
-    .feature:hover .feature-title { text-decoration: underline; text-underline-offset: 3px; }
+    .feature-open:hover .feature-title { text-decoration: underline; text-underline-offset: 3px; }
+
+    .feature-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      margin-top: 8px;
+      margin-right: -8px;
+    }
+    .feature-step {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      color: var(--soft);
+    }
+    .feature-step:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+    .feature-step svg { width: 14px; height: 14px; }
+
+    /* A thin line that fills up until the next still slides in */
+    .feature-track {
+      position: relative;
+      width: 88px;
+      height: 2px;
+      margin-inline: 6px;
+      overflow: hidden;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.24);
+    }
+    .feature-progress {
+      position: absolute;
+      inset: 0;
+      transform: scaleX(0);
+      transform-origin: left;
+      background: var(--text);
+      animation: feature-timer var(--feature-time, 12s) linear forwards;
+    }
+    .feature.is-paused .feature-progress { animation-play-state: paused; }
+    @keyframes feature-timer { to { transform: scaleX(1); } }
 
     @media (max-width: 900px) {
       .feature { top: 24px; bottom: auto; left: var(--side); right: auto; text-align: left; }
+      .feature-open { margin-left: 0; }
+      .feature-controls { justify-content: flex-start; margin-right: 0; margin-left: -8px; }
     }
     @media (max-width: 640px) {
       .hero { min-height: min(78vh, 600px); }
-      .hero-inner { padding-block: 104px 28px; }
+      .hero-inner { padding-block: 132px 28px; }
       .search { height: 54px; padding-inline: 18px 8px; }
       .search input { font-size: 17px; }
       .search button { height: 38px; padding-inline: 14px; }
@@ -396,6 +453,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center top;
       opacity: 0;
       transition: opacity 0.6s ease;
     }
@@ -510,7 +568,7 @@
 
   <main id="top">
     <section class="hero">
-      <div class="hero-image"><img id="hero-image" alt=""></div>
+      <div class="hero-image" id="hero-image"></div>
       <div class="wrap hero-inner">
         <h1 class="hero-title">Look up film</h1>
         <form class="search" id="search" role="search">
@@ -520,10 +578,22 @@
           <button type="submit">Search</button>
         </form>
         <p class="hero-sub">Its ratings, its story, and every Academy Award it won or was nominated for.</p>
-        <button class="feature" id="feature" hidden>
-          <span class="feature-label" id="feature-label"></span>
-          <span class="feature-title" id="feature-title"></span>
-        </button>
+        <div class="feature" id="feature" hidden>
+          <button class="feature-open" id="feature-open">
+            <span class="feature-label" id="feature-label"></span>
+            <span class="feature-title" id="feature-title"></span>
+          </button>
+          <div class="feature-controls">
+            <button class="feature-step" id="feature-prev" aria-label="Previous winner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+            </button>
+            <span class="feature-track" aria-hidden="true"><span class="feature-progress" id="feature-progress"></span></span>
+            <button class="feature-step" id="feature-next" aria-label="Next winner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+            <button class="feature-step" id="feature-pause" aria-label="Pause the slideshow"></button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -566,12 +636,16 @@
 
   <script>
     // =====================================================================
-    // 1. YOUR KEYS
+    // 1. YOUR KEYS AND SETTINGS
     //    They live right here, so index.html is the only file you upload.
-    //    To change one, replace the text between its quotation marks.
+    //    To change a key, replace the text between its quotation marks.
     // =====================================================================
     const OMDB_KEY = "53fe804a";
     const TMDB_KEY = "7e37fda19793bf3c160e4fb840be46db";
+
+    // How many seconds each Best Picture still stays up before the next one slides in
+    const SLIDE_SECONDS_COMPUTER = 12;
+    const SLIDE_SECONDS_PHONE = 8;
 
 
     // =====================================================================
@@ -1166,34 +1240,190 @@
 
 
     // =====================================================================
-    // 6. THE OPENING STILL: a different Best Picture winner on every visit
+    // 6. THE OPENING STILLS: Best Picture winners sliding past, like film
+    //    through a projector. It pauses while you hover over the film's name,
+    //    type in the search box, read a film page, or scroll away.
     // =====================================================================
+    const hero = document.querySelector(".hero");
+    const heroImage = document.getElementById("hero-image");
+    const feature = document.getElementById("feature");
+    const featureOpen = document.getElementById("feature-open");
+    const featureProgress = document.getElementById("feature-progress");
+    const pauseButton = document.getElementById("feature-pause");
+    const phoneSize = window.matchMedia("(max-width: 640px)");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const PAUSE_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>`;
+    const PLAY_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>`;
+    const FRAME_LINE = "12px";   // the dark gap between two stills as they slide past
+
+    let picks = [];          // every Best Picture winner, shuffled
+    let showing = -1;        // which one is on screen
+    let stepping = false;    // a slide is under way
+    let pausedByYou = false;
+    let hovering = false;
+    let heroInView = true;
+    pauseButton.innerHTML = PAUSE_ICON;
+
     function featureFilm() {
       if (!hasTmdb) return;
       winnersFor(CATEGORIES[0]).then(entries => {
-        const picks = entries
+        picks = entries
           .map(entry => ({ entry, film: entry.films.find(f => f.imdb) }))
-          .filter(pick => pick.film)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 5);
-
-        const tryPick = i => {
-          if (i >= picks.length) return;
-          const { entry, film } = picks[i];
-          getImages(film.imdb).then(images => {
-            if (!images.still) return tryPick(i + 1);
-            showImage(document.getElementById("hero-image"), tmdbImage(images.still, "w1280"));
-            const feature = document.getElementById("feature");
-            feature.dataset.movie = film.imdb;
-            feature.dataset.wikidata = film.wikidata || "";
-            document.getElementById("feature-label").textContent = `Best Picture, ${entry.year}`;
-            document.getElementById("feature-title").textContent = film.title;
-            feature.hidden = false;
-          }).catch(() => tryPick(i + 1));
-        };
-        tryPick(0);
+          .filter(pick => pick.film);
+        // Shuffle, so every visit starts somewhere new
+        for (let i = picks.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [picks[i], picks[j]] = [picks[j], picks[i]];
+        }
+        step(1);
       }).catch(() => {});
     }
+
+    // Finds the next winner (going forward or back) that has a still to show
+    function findStill(from, direction, tries = 0) {
+      if (!picks.length || tries >= 8) return Promise.reject(new Error("No stills found"));
+      const index = (from + picks.length) % picks.length;
+      return getImages(picks[index].film.imdb).then(
+        images => images.still
+          ? { index, pick: picks[index], src: tmdbImage(images.still, "w1280") }
+          : findStill(index + direction, direction, tries + 1),
+        () => findStill(index + direction, direction, tries + 1)
+      );
+    }
+
+    // Loads a still completely before it's shown, so it never appears half-drawn
+    function loadImage(src) {
+      const img = new Image();
+      img.alt = "";
+      img.src = src;
+      return (img.decode ? img.decode() : Promise.resolve()).catch(() => {}).then(() => {
+        if (!img.naturalWidth) throw new Error("The still didn't load");
+        return img;
+      });
+    }
+
+    // Moves to the next (1) or previous (-1) winner
+    function step(direction) {
+      if (stepping || !picks.length) return;
+      stepping = true;
+      const first = showing < 0;
+      let tried = first ? 0 : showing + direction;
+      findStill(tried, direction)
+        .then(found => {
+          tried = found.index;
+          return loadImage(found.src).then(img => {
+            slideIn(img, first ? 0 : direction);
+            showCaption(found.pick, first);
+            showing = found.index;
+            findStill(showing + 1, 1).then(next => { new Image().src = next.src; }).catch(() => {});   // get the next one ready
+          });
+        })
+        .catch(() => {
+          if (!first) showing = (tried + picks.length) % picks.length;   // skip the one that wouldn't load
+        })
+        .finally(() => {
+          if (!feature.hidden) restartTimer();
+          setTimeout(() => { stepping = false; }, first ? 0 : 1250);
+        });
+    }
+
+    // The new still slides in from the side while the old one slides out, like film advancing
+    function slideIn(img, direction) {
+      const old = heroImage.querySelector("img.current");
+      img.classList.add("current");
+      if (!old || !direction || reduceMotion.matches) {
+        if (old) old.remove();
+        heroImage.appendChild(img);
+        if (!direction && !reduceMotion.matches) {
+          img.classList.add("first");
+          requestAnimationFrame(() => requestAnimationFrame(() => img.classList.add("in")));
+        }
+        return;
+      }
+      const from = direction > 0 ? `calc(100% + ${FRAME_LINE})` : `calc(-100% - ${FRAME_LINE})`;
+      const away = direction > 0 ? `calc(-100% - ${FRAME_LINE})` : `calc(100% + ${FRAME_LINE})`;
+      old.classList.remove("current", "first", "in");
+      heroImage.appendChild(img);
+
+      // Both stills run on the same clock, so they travel together like one strip of film
+      const motion = { duration: 1200, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "both" };
+      const moveIn = img.animate([{ transform: `translateX(${from})` }, { transform: "translateX(0)" }], motion);
+      const moveOut = old.animate([{ transform: "translateX(0)" }, { transform: `translateX(${away})` }], motion);
+      const start = document.timeline.currentTime;
+      moveIn.startTime = start;
+      moveOut.startTime = start;
+      moveOut.finished.then(() => old.remove(), () => old.remove());
+    }
+
+    // Swaps the film's name, fading it out and back in
+    function showCaption(pick, first) {
+      const fill = () => {
+        featureOpen.dataset.movie = pick.film.imdb;
+        featureOpen.dataset.wikidata = pick.film.wikidata || "";
+        document.getElementById("feature-label").textContent = `Best Picture, ${pick.entry.year}`;
+        document.getElementById("feature-title").textContent = pick.film.title;
+      };
+      if (first || reduceMotion.matches) {
+        fill();
+        feature.hidden = false;
+        hero.classList.add("has-feature");
+        return;
+      }
+      feature.classList.add("swapping");
+      setTimeout(() => { fill(); feature.classList.remove("swapping"); }, 350);
+    }
+
+    // The thin line under the name is the timer: when it fills up, the next still slides in
+    function restartTimer() {
+      const seconds = phoneSize.matches ? SLIDE_SECONDS_PHONE : SLIDE_SECONDS_COMPUTER;
+      featureProgress.style.setProperty("--feature-time", seconds + "s");
+      featureProgress.style.animation = "none";
+      void featureProgress.offsetWidth;   // restarts the line from empty
+      featureProgress.style.animation = "";
+      updatePause();
+    }
+    featureProgress.addEventListener("animationend", () => step(1));
+
+    function updatePause() {
+      const paused = pausedByYou || hovering || !heroInView || document.hidden ||
+        document.activeElement === query || !panel.hidden;
+      feature.classList.toggle("is-paused", paused);
+    }
+
+    document.getElementById("feature-prev").addEventListener("click", () => step(-1));
+    document.getElementById("feature-next").addEventListener("click", () => step(1));
+    pauseButton.addEventListener("click", () => {
+      pausedByYou = !pausedByYou;
+      pauseButton.innerHTML = pausedByYou ? PLAY_ICON : PAUSE_ICON;
+      pauseButton.setAttribute("aria-label", pausedByYou ? "Play the slideshow" : "Pause the slideshow");
+      updatePause();
+    });
+    feature.addEventListener("mouseenter", () => { hovering = true; updatePause(); });
+    feature.addEventListener("mouseleave", () => { hovering = false; updatePause(); });
+    query.addEventListener("focus", updatePause);
+    query.addEventListener("blur", updatePause);
+    document.addEventListener("visibilitychange", updatePause);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(([entry]) => { heroInView = entry.isIntersecting; updatePause(); }, { threshold: 0.35 }).observe(hero);
+    }
+
+    // Tap the picture itself to open the film
+    hero.addEventListener("click", event => {
+      if (event.target === hero && !feature.hidden) featureOpen.click();
+    });
+
+    // On phones, swipe across the picture to see the next or previous winner
+    let touchStart = null;
+    hero.addEventListener("touchstart", event => {
+      touchStart = event.target.closest("form, .feature") ? null : { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: true });
+    hero.addEventListener("touchend", event => {
+      if (!touchStart) return;
+      const dx = event.changedTouches[0].clientX - touchStart.x;
+      const dy = event.changedTouches[0].clientY - touchStart.y;
+      touchStart = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+    }, { passive: true });
 
 
     // =====================================================================
@@ -1219,6 +1449,7 @@
       panel.scrollTop = 0;
       document.body.style.overflow = "hidden";   // stops the page behind from scrolling
       closeButton.focus();
+      updatePause();                              // holds the slideshow while you read
 
       if (!hasOmdb) { panelContent.innerHTML = `<div class="wrap film-body" style="padding-top:88px">${needKeyMessage}</div>`; return; }
       panelContent.innerHTML = `<div class="wrap film-body" style="padding-top:88px"><p class="note">Loading the film…</p></div>`;
@@ -1268,6 +1499,7 @@
       panel.hidden = true;
       document.body.style.overflow = "";
       if (lastClicked) lastClicked.focus({ preventScroll: true });
+      updatePause();
     }
     closeButton.addEventListener("click", closeFilm);
     document.addEventListener("keydown", event => {
