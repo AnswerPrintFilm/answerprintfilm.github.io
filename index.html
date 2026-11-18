@@ -82,6 +82,9 @@
     }
     .icon-button:hover { background: var(--raised); }
     .icon-button svg { width: 20px; height: 20px; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .toplink { padding: 8px 6px; color: var(--soft); font-size: 14px; }
+    .toplink:hover { color: var(--text); }
 
     .strip {
       height: 8px;
@@ -198,6 +201,8 @@
     .feature-label { display: block; color: var(--soft); font-size: 13px; }
     .feature-title { display: block; margin-top: 2px; font-weight: 600; font-size: 15px; line-height: 1.25; }
     .feature-open:hover .feature-title { text-decoration: underline; text-underline-offset: 3px; }
+    .feature-sub { display: block; margin-top: 1px; color: var(--soft); font-size: 13px; line-height: 1.3; }
+    .feature-sub[hidden] { display: none; }
 
     .feature-controls {
       display: flex;
@@ -217,6 +222,7 @@
     }
     .feature-step:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
     .feature-step svg { width: 14px; height: 14px; }
+    .feature-step:disabled { opacity: 0.35; background: none; cursor: default; }
 
     /* A thin line that fills up until the next still slides in */
     .feature-track {
@@ -408,6 +414,19 @@
     footer { padding-block: 0 48px; color: var(--muted); font-size: 13px; }
     footer p { max-width: 80ch; margin-top: 8px; }
     footer a { color: inherit; }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+      gap: 24px 48px;
+    }
+    .footer-credit .wordmark { display: inline-block; margin-bottom: 10px; font-size: 13px; }
+    .footer-credit p { margin-top: 2px; }
+    .footer-maker { color: var(--text); font-size: 14px; }
+    .footer-about { margin-top: 12px; text-decoration: underline; text-underline-offset: 3px; }
+    .footer-notes p:first-child { margin-top: 0; }
+    @media (max-width: 720px) {
+      .footer-grid { grid-template-columns: 1fr; }
+    }
     .rule { margin-bottom: 20px; border: 0; border-top: 1px solid var(--line); }
 
     /* =====================================================================
@@ -539,6 +558,49 @@
     .all-awards { margin-top: 20px; color: var(--muted); font-size: 14px; }
 
     /* =====================================================================
+       ABOUT ANSWER PRINT
+       ===================================================================== */
+    .about-inner { display: block; max-width: 760px; margin: 0 auto; padding: 96px var(--side) 120px; }
+    .about-title { font-size: clamp(38px, 6vw, 64px); font-weight: 600; letter-spacing: -0.035em; line-height: 1; }
+    .about-lead { margin-top: 14px; color: var(--soft); font-size: clamp(18px, 2.2vw, 22px); line-height: 1.4; }
+    .about-figure { margin: 44px 0 40px; }
+    .about-figure figcaption { max-width: 62ch; margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .about-inner > p { max-width: 62ch; color: #E4E4E4; font-size: 17px; line-height: 1.6; }
+    .about-inner h3 { margin: 40px 0 10px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .about-list { list-style: none; }
+    .about-list li { padding: 10px 0; border-top: 1px solid var(--line); color: #E4E4E4; font-size: 16px; }
+
+    /* The credits close the page the way they close a film */
+    .end-credits { margin-top: 72px; padding-top: 48px; border-top: 1px solid var(--line); text-align: center; }
+    .end-credits dt { color: var(--muted); font-size: 13px; }
+    .end-credits dd { margin: 2px 0 22px; font-size: 20px; font-weight: 600; }
+    .end-credits dd.creator { margin-bottom: 36px; font-size: clamp(30px, 4.4vw, 44px); letter-spacing: -0.025em; }
+    .end-credits a { color: inherit; text-decoration: none; }
+    .end-credits a:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .end-credits p { margin-top: 6px; color: var(--muted); font-size: 13px; }
+
+    /* The camera drawing. The reels turn steadily while the film stops and starts
+       in the gate, one frame at a time, the way a real camera moves film. */
+    .camera { display: block; width: 100%; height: auto; color: var(--text); }
+    .camera .strip-base { fill: #141414; }
+    .camera .solid { fill: var(--bg); stroke: currentColor; stroke-width: 1.5; }
+    .camera .line { fill: none; stroke: currentColor; stroke-width: 1.5; }
+    .camera .edge { fill: none; stroke: currentColor; stroke-opacity: 0.4; stroke-width: 1; }
+    .camera .reel { transform-box: fill-box; transform-origin: center; }
+    .camera .exposure { opacity: 0; }
+    @keyframes reel-turn { to { transform: rotate(-360deg); } }
+    @keyframes film-advance {
+      0% { transform: translateX(0); animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1); }
+      24%, 100% { transform: translateX(69.5px); }
+    }
+    @keyframes exposure { 0%, 30% { opacity: 0; } 58% { opacity: 1; } 88%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: no-preference) {
+      .camera .reel { animation: reel-turn 14s linear infinite; }
+      .camera .film-run { animation: film-advance 1.6s infinite; }
+      .camera .exposure { animation: exposure 1.6s infinite; }
+    }
+
+    /* =====================================================================
        MOTION: the opening still drifts into place once; everything else
        moves only when you do something
        ===================================================================== */
@@ -559,9 +621,12 @@
   <header class="topbar">
     <div class="wrap topbar-inner">
       <a class="wordmark" href="#top">Answer Print</a>
-      <button class="icon-button" id="jump-search" aria-label="Search for a film">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>
-      </button>
+      <div class="topbar-actions">
+        <button class="toplink" data-open-about>About</button>
+        <button class="icon-button" id="jump-search" aria-label="Search for a film">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>
+        </button>
+      </div>
     </div>
     <div class="strip" aria-hidden="true"></div>
   </header>
@@ -582,6 +647,7 @@
           <button class="feature-open" id="feature-open">
             <span class="feature-label" id="feature-label"></span>
             <span class="feature-title" id="feature-title"></span>
+            <span class="feature-sub" id="feature-sub" hidden></span>
           </button>
           <div class="feature-controls">
             <button class="feature-step" id="feature-prev" aria-label="Previous winner">
@@ -622,8 +688,18 @@
 
   <footer class="wrap">
     <hr class="rule">
-    <p>An answer print is the first finished copy of a film, picture and sound together, made for the filmmakers to approve before it goes out to theaters.</p>
-    <p>Winners and nominations come from Wikidata, a free public database. Ratings come from OMDb. Film images come from <a href="https://www.themoviedb.org">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB. A brand-new winner can take a few days to show up.</p>
+    <div class="footer-grid">
+      <div class="footer-credit">
+        <a class="wordmark" href="#top">Answer Print</a>
+        <p class="footer-maker">Created by Josh Garza</p>
+        <p>© 2026 Josh Garza</p>
+        <button class="text-button footer-about" data-open-about>About Answer Print</button>
+      </div>
+      <div class="footer-notes">
+        <p>An answer print is the first finished copy of a film, picture and sound together, made for the filmmakers to approve before it goes out to theaters.</p>
+        <p>Winners, nominations, and format details come from Wikidata, a free public database. Ratings come from OMDb. Film images come from <a href="https://www.themoviedb.org">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB. A brand-new winner can take a few days to show up.</p>
+      </div>
+    </div>
   </footer>
 
   <!-- The film page that opens over everything -->
@@ -632,6 +708,119 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
     <div role="dialog" aria-modal="true" aria-label="Film details" id="panel-content"></div>
+  </div>
+
+  <!-- About Answer Print -->
+  <div class="panel about" id="about" hidden>
+    <button class="close" id="about-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <article class="about-inner" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <h2 class="about-title" id="about-title">About Answer Print</h2>
+      <p class="about-lead">A one-stop shop for film history, optics, and specs.</p>
+
+      <!-- A VistaVision-style camera: the film runs sideways, one frame at a time -->
+      <figure class="about-figure">
+        <svg class="camera" viewBox="60 16 640 312" role="img" aria-label="Drawing of a VistaVision camera, with film running sideways through it one frame at a time">
+          <defs>
+            <!-- One frame of film: eight perforations along each edge, then the picture -->
+            <pattern id="vv-frame" x="345.25" y="180" width="69.5" height="64" patternUnits="userSpaceOnUse">
+              <g fill="#FFFFFF" fill-opacity="0.55">
+                <rect x="2.1" y="2.6" width="4.5" height="3.6" rx="1"/><rect x="10.79" y="2.6" width="4.5" height="3.6" rx="1"/>
+                <rect x="19.48" y="2.6" width="4.5" height="3.6" rx="1"/><rect x="28.16" y="2.6" width="4.5" height="3.6" rx="1"/>
+                <rect x="36.85" y="2.6" width="4.5" height="3.6" rx="1"/><rect x="45.54" y="2.6" width="4.5" height="3.6" rx="1"/>
+                <rect x="54.23" y="2.6" width="4.5" height="3.6" rx="1"/><rect x="62.91" y="2.6" width="4.5" height="3.6" rx="1"/>
+                <rect x="2.1" y="57.8" width="4.5" height="3.6" rx="1"/><rect x="10.79" y="57.8" width="4.5" height="3.6" rx="1"/>
+                <rect x="19.48" y="57.8" width="4.5" height="3.6" rx="1"/><rect x="28.16" y="57.8" width="4.5" height="3.6" rx="1"/>
+                <rect x="36.85" y="57.8" width="4.5" height="3.6" rx="1"/><rect x="45.54" y="57.8" width="4.5" height="3.6" rx="1"/>
+                <rect x="54.23" y="57.8" width="4.5" height="3.6" rx="1"/><rect x="62.91" y="57.8" width="4.5" height="3.6" rx="1"/>
+              </g>
+              <rect x="2" y="10" width="65.5" height="44" rx="1.5" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.28"/>
+            </pattern>
+            <clipPath id="vv-path"><rect x="170" y="180" width="420" height="64"/></clipPath>
+          </defs>
+
+          <!-- The film, running from the feed reel through the gate to the take-up reel -->
+          <g clip-path="url(#vv-path)">
+            <g class="film-run">
+              <rect class="strip-base" x="31" y="180" width="700" height="64"/>
+              <rect x="31" y="180" width="700" height="64" fill="url(#vv-frame)"/>
+            </g>
+            <line class="edge" x1="170" y1="180.5" x2="590" y2="180.5"/>
+            <line class="edge" x1="170" y1="243.5" x2="590" y2="243.5"/>
+          </g>
+
+          <!-- Light reaching the frame in the gate -->
+          <rect class="exposure" x="345.25" y="180" width="69.5" height="64" fill="#FFFFFF" fill-opacity="0.2"/>
+
+          <!-- Feed reel and take-up reel -->
+          <g class="reel">
+            <circle class="solid" cx="170" cy="120" r="92"/>
+            <circle class="edge" cx="170" cy="120" r="84"/>
+            <circle class="line" cx="170" cy="120" r="12"/>
+            <circle cx="170" cy="120" r="3" fill="currentColor"/>
+            <circle class="line" cx="170" cy="66" r="14"/>
+            <circle class="line" cx="221.36" cy="103.31" r="14"/>
+            <circle class="line" cx="201.74" cy="163.69" r="14"/>
+            <circle class="line" cx="138.26" cy="163.69" r="14"/>
+            <circle class="line" cx="118.64" cy="103.31" r="14"/>
+          </g>
+          <g class="reel">
+            <circle class="solid" cx="590" cy="120" r="92"/>
+            <circle class="edge" cx="590" cy="120" r="84"/>
+            <circle class="line" cx="590" cy="120" r="12"/>
+            <circle cx="590" cy="120" r="3" fill="currentColor"/>
+            <circle class="line" cx="590" cy="66" r="14"/>
+            <circle class="line" cx="641.36" cy="103.31" r="14"/>
+            <circle class="line" cx="621.74" cy="163.69" r="14"/>
+            <circle class="line" cx="558.26" cy="163.69" r="14"/>
+            <circle class="line" cx="538.64" cy="103.31" r="14"/>
+          </g>
+
+          <!-- Camera body, with a window onto the gate -->
+          <path class="solid" fill-rule="evenodd" d="M314 146H446A14 14 0 0 1 460 160V264A14 14 0 0 1 446 278H314A14 14 0 0 1 300 264V160A14 14 0 0 1 314 146ZM345.25 180H414.75V244H345.25Z"/>
+          <circle cx="440" cy="162" r="3.5" fill="currentColor" fill-opacity="0.7"/>
+
+          <!-- Lens -->
+          <rect class="solid" x="352" y="278" width="56" height="24" rx="2"/>
+          <path class="edge" d="M364 282v16M372 282v16M380 282v16M388 282v16M396 282v16"/>
+          <rect class="solid" x="340" y="302" width="80" height="14" rx="5"/>
+        </svg>
+        <figcaption>VistaVision turns 35mm film on its side. The film runs sideways through the camera, eight perforations to a frame, for a picture about twice the size of a standard 35mm frame. Paramount introduced it in 1954 with White Christmas, and it has returned for films like The Brutalist and One Battle After Another.</figcaption>
+      </figure>
+
+      <p>Answer Print brings together the details film lovers usually have to hunt for across several sites. Search any film to see its ratings, its story, every Academy Award it won or was nominated for, and how it was shot. Or browse every Academy Award winner, back to the first ceremony in 1929.</p>
+
+      <h3>Why “Answer Print”</h3>
+      <p>In a film lab, the answer print is the first finished copy of a film, with picture and sound together, made so the filmmakers can approve the lab's work before copies go out to theaters. The name is a nod to that moment, when everything about a film finally comes together in one place.</p>
+
+      <h3>What you'll find</h3>
+      <ul class="about-list">
+        <li>Every Academy Award winner in 24 categories, back to the first ceremony</li>
+        <li>Ratings from IMDb, Rotten Tomatoes, and Metacritic</li>
+        <li>Each film's story, director, writers, and cast</li>
+        <li>Every Academy Award a film won or was nominated for</li>
+        <li>How a film was shot, when it's on record: the film format, camera, and aspect ratio</li>
+      </ul>
+
+      <h3>Where the information comes from</h3>
+      <p>Awards and format details come from Wikidata, a free, community-maintained database. Ratings, plots, and credits come from OMDb, and film images come from TMDB. Because these sources are kept up by people, a detail is occasionally missing or mistaken, and a brand-new winner can take a few days to appear.</p>
+
+      <section class="end-credits" aria-label="Credits">
+        <dl>
+          <dt>Created by</dt>
+          <dd class="creator">Josh Garza</dd>
+          <dt>Award and format data</dt>
+          <dd>Wikidata</dd>
+          <dt>Ratings, plots, and credits</dt>
+          <dd>OMDb</dd>
+          <dt>Film images</dt>
+          <dd><a href="https://www.themoviedb.org">TMDB</a></dd>
+        </dl>
+        <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+        <p>© 2026 Josh Garza</p>
+      </section>
+    </article>
   </div>
 
   <script>
@@ -646,6 +835,10 @@
     // How many seconds each Best Picture still stays up before the next one slides in
     const SLIDE_SECONDS_COMPUTER = 12;
     const SLIDE_SECONDS_PHONE = 8;
+
+    // Which awards the opening stills are drawn from, picked at random
+    const SLIDE_AWARDS = ["Picture", "Director", "Actor", "Actress", "Supporting Actor",
+      "Supporting Actress", "Original Screenplay", "Adapted Screenplay"];
 
 
     // =====================================================================
@@ -1240,8 +1433,8 @@
 
 
     // =====================================================================
-    // 6. THE OPENING STILLS: Best Picture winners sliding past, like film
-    //    through a projector. It pauses while you hover over the film's name,
+    // 6. THE OPENING STILLS: winners from the big awards sliding past, like
+    //    film through a projector. It pauses while you hover over the name,
     //    type in the search box, read a film page, or scroll away.
     // =====================================================================
     const hero = document.querySelector(".hero");
@@ -1256,39 +1449,76 @@
     const PLAY_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>`;
     const FRAME_LINE = "12px";   // the dark gap between two stills as they slide past
 
-    let picks = [];          // every Best Picture winner, shuffled
-    let showing = -1;        // which one is on screen
-    let stepping = false;    // a slide is under way
+    const slideAwards = SLIDE_AWARDS.map(short => CATEGORIES.find(c => c.short === short)).filter(Boolean);
+    const prevButton = document.getElementById("feature-prev");
+    const allPicks = new Map();   // each award's winners
+    const decks = new Map();      // each award's winners not shown yet, shuffled
+    const shown = [];             // every still shown so far, in order, so you can go back
+    let position = -1;            // which one in "shown" is on screen
+    let upcoming = null;          // the next new still, chosen early so its picture is already loaded
+    let stepping = false;         // a slide is under way
     let pausedByYou = false;
     let hovering = false;
     let heroInView = true;
     pauseButton.innerHTML = PAUSE_ICON;
 
-    function featureFilm() {
-      if (!hasTmdb) return;
-      winnersFor(CATEGORIES[0]).then(entries => {
-        picks = entries
-          .map(entry => ({ entry, film: entry.films.find(f => f.imdb) }))
-          .filter(pick => pick.film);
-        // Shuffle, so every visit starts somewhere new
-        for (let i = picks.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [picks[i], picks[j]] = [picks[j], picks[i]];
-        }
-        step(1);
-      }).catch(() => {});
+    function shuffle(list) {
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      return list;
     }
 
-    // Finds the next winner (going forward or back) that has a still to show
-    function findStill(from, direction, tries = 0) {
-      if (!picks.length || tries >= 8) return Promise.reject(new Error("No stills found"));
-      const index = (from + picks.length) % picks.length;
-      return getImages(picks[index].film.imdb).then(
-        images => images.still
-          ? { index, pick: picks[index], src: tmdbImage(images.still, "w1280") }
-          : findStill(index + direction, direction, tries + 1),
-        () => findStill(index + direction, direction, tries + 1)
+    // Adds one award's winners to the mix
+    function addAward(category, entries) {
+      const picks = entries
+        .map(entry => ({ category, entry, film: entry.films.find(f => f.imdb) }))
+        .filter(pick => pick.film);
+      if (!picks.length) return;
+      allPicks.set(category, picks);
+      decks.set(category, shuffle([...picks]));
+    }
+
+    function featureFilm() {
+      if (!hasTmdb || !slideAwards.length) return;
+      const [firstAward, ...others] = slideAwards;
+      // Start as soon as the first award is ready, along with any others saved from an earlier visit
+      const alreadySaved = others.filter(c => remember.get("answer-print-winners-1-" + c.slug));
+      const ready = [firstAward, ...alreadySaved].map(c => winnersFor(c).then(entries => addAward(c, entries)));
+      Promise.allSettled(ready).then(() => {
+        if (allPicks.size) step(1);
+        // Then gather the rest quietly, one at a time, so Wikidata isn't asked everything at once
+        others.filter(c => !alreadySaved.includes(c)).reduce((chain, c) =>
+          chain.then(() => winnersFor(c).then(entries => addAward(c, entries)).catch(() => {})), Promise.resolve());
+      });
+    }
+
+    // Picks a random award, then a random winner from it that hasn't been shown yet
+    function drawPick() {
+      const awards = [...allPicks.keys()];
+      if (!awards.length) return null;
+      const category = awards[Math.floor(Math.random() * awards.length)];
+      if (!decks.get(category).length) decks.set(category, shuffle([...allPicks.get(category)]));
+      return decks.get(category).pop();
+    }
+
+    // Finds a new winner with a still to show (not the same film as the one on screen)
+    function newStill(tries = 0) {
+      if (tries >= 10) return Promise.reject(new Error("No stills found"));
+      const pick = drawPick();
+      if (!pick) return Promise.reject(new Error("Nothing to show yet"));
+      const onScreen = shown[shown.length - 1];
+      if (onScreen && onScreen.pick.film.imdb === pick.film.imdb) return newStill(tries + 1);
+      return getImages(pick.film.imdb).then(
+        images => images.still ? { pick, src: tmdbImage(images.still, "w1280") } : newStill(tries + 1),
+        () => newStill(tries + 1)
       );
+    }
+
+    function prepareNext() {
+      upcoming = newStill().then(still => { new Image().src = still.src; return still; });
+      upcoming.catch(() => { upcoming = null; });
     }
 
     // Loads a still completely before it's shown, so it never appears half-drawn
@@ -1302,25 +1532,32 @@
       });
     }
 
-    // Moves to the next (1) or previous (-1) winner
+    // Moves to the next (1) or previous (-1) still
     function step(direction) {
-      if (stepping || !picks.length) return;
+      if (stepping || !allPicks.size) return;
+      if (direction < 0 && position <= 0) return;   // nothing earlier to go back to
       stepping = true;
-      const first = showing < 0;
-      let tried = first ? 0 : showing + direction;
-      findStill(tried, direction)
-        .then(found => {
-          tried = found.index;
-          return loadImage(found.src).then(img => {
-            slideIn(img, first ? 0 : direction);
-            showCaption(found.pick, first);
-            showing = found.index;
-            findStill(showing + 1, 1).then(next => { new Image().src = next.src; }).catch(() => {});   // get the next one ready
-          });
-        })
-        .catch(() => {
-          if (!first) showing = (tried + picks.length) % picks.length;   // skip the one that wouldn't load
-        })
+      const first = position < 0;
+      let target;
+      if (direction < 0) {
+        target = Promise.resolve(shown[position - 1]);
+      } else if (position < shown.length - 1) {
+        target = Promise.resolve(shown[position + 1]);   // going forward again after going back
+      } else {
+        const next = upcoming || newStill();
+        upcoming = null;
+        target = next.then(still => { shown.push(still); return still; });
+      }
+
+      target
+        .then(still => loadImage(still.src).then(img => {
+          slideIn(img, first ? 0 : direction);
+          showCaption(still.pick, first);
+          position = shown.indexOf(still);
+          prevButton.disabled = position <= 0;
+          if (position === shown.length - 1) prepareNext();   // get the next one ready
+        }))
+        .catch(() => {})
         .finally(() => {
           if (!feature.hidden) restartTimer();
           setTimeout(() => { stepping = false; }, first ? 0 : 1250);
@@ -1355,13 +1592,17 @@
       moveOut.finished.then(() => old.remove(), () => old.remove());
     }
 
-    // Swaps the film's name, fading it out and back in
+    // Swaps the caption, fading it out and back in: the award and year, who won, and for what
     function showCaption(pick, first) {
       const fill = () => {
+        const words = winnerTile(pick.category, pick.entry);
         featureOpen.dataset.movie = pick.film.imdb;
         featureOpen.dataset.wikidata = pick.film.wikidata || "";
-        document.getElementById("feature-label").textContent = `Best Picture, ${pick.entry.year}`;
-        document.getElementById("feature-title").textContent = pick.film.title;
+        document.getElementById("feature-label").textContent = `${pick.category.name}, ${pick.entry.year}`;
+        document.getElementById("feature-title").textContent = words.who;
+        const sub = document.getElementById("feature-sub");
+        sub.textContent = words.what;
+        sub.hidden = !words.what;
       };
       if (first || reduceMotion.matches) {
         fill();
@@ -1386,11 +1627,11 @@
 
     function updatePause() {
       const paused = pausedByYou || hovering || !heroInView || document.hidden ||
-        document.activeElement === query || !panel.hidden;
+        document.activeElement === query || !panel.hidden || !about.hidden;
       feature.classList.toggle("is-paused", paused);
     }
 
-    document.getElementById("feature-prev").addEventListener("click", () => step(-1));
+    prevButton.addEventListener("click", () => step(-1));
     document.getElementById("feature-next").addEventListener("click", () => step(1));
     pauseButton.addEventListener("click", () => {
       pausedByYou = !pausedByYou;
@@ -1503,7 +1744,9 @@
     }
     closeButton.addEventListener("click", closeFilm);
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && !panel.hidden) closeFilm();
+      if (event.key !== "Escape") return;
+      if (!about.hidden) closeAbout();
+      else if (!panel.hidden) closeFilm();
     });
 
     // A film's details from OMDb, saved for a day
@@ -1723,11 +1966,43 @@
 
 
     // =====================================================================
-    // 8. START: open the award in the web address (like #best-actor), or Best Picture
+    // 8. ABOUT ANSWER PRINT (opens over everything, and has its own address: #about)
+    // =====================================================================
+    const about = document.getElementById("about");
+    let addressBeforeAbout = "";
+    let aboutOpenedFrom = null;
+
+    function openAbout() {
+      if (!about.hidden) return;
+      aboutOpenedFrom = document.activeElement;
+      addressBeforeAbout = location.hash === "#about" ? "" : location.hash;
+      about.hidden = false;
+      about.scrollTop = 0;
+      document.body.style.overflow = "hidden";   // stops the page behind from scrolling
+      history.replaceState(null, "", "#about");
+      document.getElementById("about-close").focus();
+      updatePause();
+    }
+
+    function closeAbout() {
+      about.hidden = true;
+      document.body.style.overflow = panel.hidden ? "" : "hidden";
+      history.replaceState(null, "", addressBeforeAbout || location.pathname + location.search);
+      if (aboutOpenedFrom && aboutOpenedFrom.focus) aboutOpenedFrom.focus({ preventScroll: true });
+      updatePause();
+    }
+
+    document.querySelectorAll("[data-open-about]").forEach(button => button.addEventListener("click", openAbout));
+    document.getElementById("about-close").addEventListener("click", closeAbout);
+
+
+    // =====================================================================
+    // 9. START: open the award in the web address (like #best-actor), or Best Picture
     // =====================================================================
     const startAt = CATEGORIES.findIndex(c => "#" + c.slug === location.hash);
     showCategory(startAt >= 0 ? startAt : 0, { initial: true });
     if (startAt >= 0) winners.scrollIntoView();
+    if (location.hash === "#about") openAbout();
     featureFilm();
   </script>
 </body>
