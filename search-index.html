@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Film Archive">
+  <meta name="theme-color" content="#F4C20D">
+  <title>Film Archive</title>
+
+  <!-- Three typefaces:
+       Bowlby One    = chunky 70s grindhouse-poster type (big headings)
+       Archivo       = tall, skinny poster type (movie titles)
+       Special Elite = beat-up typewriter, like a screenplay (small details) -->
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Bowlby+One&family=Special+Elite&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============ COLORS ============
+       Change these to restyle the whole site at once. */
+    :root {
+      --paper: #EDE0C4;   /* old pulp-magazine paper */
+      --black: #000;
+      --yellow: #F4C20D;  /* grindhouse yellow */
+      --red: #C1121F;     /* blood red */
+      --white: #F7F3EA;
+    }
+
+    /* ============ BASICS ============ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Archivo", "Arial Narrow", sans-serif;
+      background: var(--paper);
+      color: var(--black);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Film grain over the whole page, like a worn-out 35mm print */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Every section shares the same side spacing and max width */
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding-inline: clamp(16px, 5vw, 56px);
+    }
+
+    /* Hidden on screen, but still read aloud by screen readers */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+    }
+
+    /* Makes buttons look like plain content instead of gray boxes */
+    .plain-button {
+      background: none; border: none; color: inherit;
+      font: inherit; text-align: left; cursor: pointer; width: 100%;
+    }
+    :focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+
+    .note {
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    /* ============ TOP OF THE PAGE ============ */
+    header {
+      background: var(--yellow);
+      padding-block: clamp(72px, 12vw, 136px) clamp(40px, 6vw, 72px);
+    }
+
+    h1 {
+      font-family: "Bowlby One", "Impact", sans-serif;
+      font-weight: 400;
+      text-transform: uppercase;
+      font-size: clamp(64px, 15vw, 184px);
+      line-height: 0.9;
+      transform: rotate(-3deg);
+      transform-origin: left bottom;
+      text-shadow: 0.05em 0.05em 0 var(--red);   /* hard red drop shadow */
+    }
+
+    .intro {
+      margin-top: clamp(28px, 4vw, 44px);
+      max-width: 38ch;
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: clamp(17px, 2.2vw, 21px);
+      line-height: 1.5;
+    }
+
+    /* ============ SEARCH ============ */
+    .search {
+      display: flex;
+      gap: 8px;
+      margin-top: 32px;
+      max-width: 640px;
+    }
+    .search input {
+      flex: 1;
+      min-width: 0;
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 20px;
+      padding: 14px 16px;
+      border: 3px solid var(--black);
+      border-radius: 0;
+      background: var(--white);
+      color: var(--black);
+    }
+    .search button {
+      font-family: "Bowlby One", "Impact", sans-serif;
+      font-size: 18px;
+      padding: 0 20px;
+      border: 3px solid var(--black);
+      border-radius: 0;
+      background: var(--black);
+      color: var(--yellow);
+      cursor: pointer;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 24px 16px;
+      margin-top: 28px;
+    }
+    .results .note { grid-column: 1 / -1; }
+    .result-title {
+      display: block;
+      margin-top: 8px;
+      font-stretch: 75%;
+      font-weight: 800;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+    .result-year {
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 14px;
+    }
+
+    /* Posters, plus a stand-in box when a movie has no poster */
+    .poster {
+      display: block;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border: 3px solid var(--black);
+      background: var(--black);
+    }
+    .no-poster {
+      display: grid;
+      place-items: center;
+      color: var(--paper);
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 14px;
+    }
+
+    /* ============ CHAPTER CARDS ============
+       Each decade opens with a black title card, the way a Tarantino film
+       breaks its story into chapters. */
+    .card {
+      background: var(--black);
+      color: var(--white);
+      text-align: center;
+      padding: clamp(48px, 8vw, 96px) 16px;
+    }
+    .chapter-num {
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: clamp(18px, 2.4vw, 24px);
+      margin-bottom: 12px;
+    }
+    .card h2 {
+      font-family: "Bowlby One", "Impact", sans-serif;
+      font-weight: 400;
+      font-size: clamp(48px, 10vw, 120px);
+      line-height: 0.95;
+      color: var(--yellow);
+    }
+
+    /* ============ ONE ROW PER WINNER ============ */
+    .films { padding-block: clamp(24px, 4vw, 48px); }
+
+    .film {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr;
+      gap: 0 clamp(12px, 2vw, 24px);
+      align-items: baseline;
+      padding: 12px 0;
+      border-bottom: 2px solid var(--black);
+    }
+    .film:last-child { border-bottom: none; }
+    button.film:hover .title { color: var(--red); }
+
+    .year {
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 22px;
+      color: var(--red);
+    }
+    .ceremony {
+      display: block;
+      font-size: 13px;
+      color: var(--black);
+      margin-top: 2px;
+    }
+
+    .title {
+      font-stretch: 62%;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: clamp(34px, 6.4vw, 72px);
+      line-height: 0.95;
+      text-wrap: balance;
+    }
+
+    /* On phones, the year sits above the title instead of beside it */
+    @media (max-width: 600px) {
+      .film { grid-template-columns: 1fr; }
+      .ceremony { display: inline; margin-left: 8px; }
+    }
+
+    .status { padding-block: 48px 96px; }
+
+    footer {
+      background: var(--black);
+      color: var(--white);
+      padding-block: 40px 56px;
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    /* ============ THE MOVIE CARD (opens over the page) ============ */
+    .panel {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.8);
+      padding: clamp(0px, 4vw, 48px);
+    }
+    .panel[hidden] { display: none; }
+
+    .panel-inner {
+      position: relative;
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 4px solid var(--black);
+      padding: clamp(20px, 4vw, 44px);
+      min-height: 100%;
+    }
+    @media (min-width: 700px) { .panel-inner { min-height: 0; } }
+
+    .close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-family: "Bowlby One", "Impact", sans-serif;
+      font-size: 16px;
+      padding: 8px 14px;
+      border: 3px solid var(--black);
+      background: var(--yellow);
+      color: var(--black);
+      cursor: pointer;
+    }
+
+    .movie {
+      display: grid;
+      grid-template-columns: minmax(150px, 260px) 1fr;
+      gap: clamp(20px, 4vw, 40px);
+      margin-top: 40px;
+    }
+    @media (max-width: 640px) {
+      .movie { grid-template-columns: 1fr; }
+      .movie .poster { width: 60%; }
+    }
+
+    .movie-title {
+      font-stretch: 62%;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 0.92;
+      text-wrap: balance;
+    }
+    .facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      margin-top: 12px;
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 16px;
+    }
+
+    .scores {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .score {
+      background: var(--black);
+      color: var(--white);
+      padding: 12px 16px 10px;
+      min-width: 112px;
+    }
+    .score-num {
+      display: block;
+      font-family: "Bowlby One", "Impact", sans-serif;
+      font-size: 32px;
+      line-height: 1;
+      color: var(--yellow);
+    }
+    .score-source {
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 14px;
+    }
+
+    .plot {
+      margin-top: 24px;
+      max-width: 60ch;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+    .credits {
+      margin-top: 16px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .credits b { font-weight: 700; }
+
+    /* The Oscars breakdown */
+    .oscars {
+      margin-top: clamp(32px, 5vw, 48px);
+      padding-top: 24px;
+      border-top: 4px solid var(--black);
+    }
+    .oscars h3 {
+      font-family: "Bowlby One", "Impact", sans-serif;
+      font-weight: 400;
+      font-size: clamp(32px, 5vw, 48px);
+      line-height: 1;
+    }
+    .oscars h4 {
+      margin-top: 24px;
+      font-stretch: 62%;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 28px;
+    }
+    .oscars h4.won { color: var(--red); }
+    .oscars ul { list-style: none; }
+    .oscars li {
+      padding: 10px 0;
+      border-bottom: 2px solid var(--black);
+    }
+    .category {
+      display: block;
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .who {
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 15px;
+    }
+    .all-awards {
+      margin-top: 24px;
+      font-family: "Special Elite", "Courier New", monospace;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Best<br>Picture</h1>
+      <p class="intro" id="intro">Every Academy Award winner, told in chapters.</p>
+
+      <form class="search" id="search" role="search">
+        <label for="query" class="sr-only">Search for a movie</label>
+        <input id="query" type="search" placeholder="Search any movie" autocomplete="off">
+        <button type="submit">Search</button>
+      </form>
+      <div class="results" id="results"></div>
+    </div>
+  </header>
+
+  <main id="list">
+    <p class="wrap status note">Loading the winners…</p>
+  </main>
+
+  <footer>
+    <div class="wrap">The end. Winners and Oscars from Wikidata, ratings from OMDb.</div>
+  </footer>
+
+  <!-- The movie card that opens over the page -->
+  <div class="panel" id="panel" hidden>
+    <div class="panel-inner" role="dialog" aria-modal="true" aria-label="Movie details">
+      <button class="close" id="close">Close</button>
+      <div id="panel-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // =====================================================================
+    // 1. YOUR OMDb KEY
+    //    Replace PASTE_YOUR_KEY_HERE with your key. Keep the quotation marks.
+    // =====================================================================
+    const OMDB_KEY = "PASTE_YOUR_KEY_HERE";
+
+    const keyIsReady = OMDB_KEY && OMDB_KEY !== "PASTE_YOUR_KEY_HERE";
+    const needKeyMessage = `<p class="note">Search needs your OMDb key. Add it at the top of the script in index.html.</p>`;
+
+
+    // =====================================================================
+    // 2. HELPERS: small tools the rest of the code reuses
+    // =====================================================================
+
+    // Ask OMDb a question, like { s: "whiplash" } to search or { i: "tt2582802" } for one movie
+    function askOmdb(params) {
+      const query = new URLSearchParams({ apikey: OMDB_KEY, ...params });
+      return fetch("https://www.omdbapi.com/?" + query).then(response => response.json());
+    }
+
+    // Ask Wikidata a question written in its query language (SPARQL)
+    function askWikidata(question) {
+      const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(question);
+      return fetch(url).then(response => response.json()).then(data => data.results.bindings);
+    }
+
+    // OMDb says "N/A" when it doesn't know something. This turns that into blank.
+    function clean(value) {
+      return value && value !== "N/A" ? value : "";
+    }
+
+    // Makes text safe to put on the page
+    function safe(text) {
+      const div = document.createElement("div");
+      div.textContent = text ?? "";
+      return div.innerHTML;
+    }
+
+    // A poster image, or a black stand-in box if there isn't one
+    function poster(url, title) {
+      if (clean(url)) {
+        return `<img class="poster" src="${safe(url)}" alt="Poster for ${safe(title)}" loading="lazy">`;
+      }
+      return `<div class="poster no-poster">No poster</div>`;
+    }
+
+    // Turns 87 into "87th", 1 into "1st", and so on
+    function ordinal(n) {
+      const s = ["th", "st", "nd", "rd"], v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+
+    // =====================================================================
+    // 3. THE BEST PICTURE LIST
+    // =====================================================================
+    const chapterWords = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight",
+      "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen"];
+
+    // In plain English: "Give me every film that received the Academy Award
+    // for Best Picture, its title, release year, ceremony, and IMDb ID."
+    // "en,mul" means: use the English title, or the title shared across all languages.
+    const bestPictureQuestion = `
+      SELECT ?film ?filmLabel (MIN(YEAR(?released)) AS ?year) (SAMPLE(?ceremonyName) AS ?ceremony) (SAMPLE(?imdb) AS ?imdbId) WHERE {
+        ?film p:P166 ?award .
+        ?award ps:P166 wd:Q102427 .
+        MINUS { ?film wdt:P31 wd:Q5 }
+        OPTIONAL { ?film wdt:P577 ?released }
+        OPTIONAL { ?film wdt:P345 ?imdb }
+        OPTIONAL {
+          ?award pq:P805 ?ceremonyItem .
+          ?ceremonyItem rdfs:label ?ceremonyName .
+          FILTER(LANG(?ceremonyName) IN ("en", "mul"))
+        }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
+      }
+      GROUP BY ?film ?filmLabel
+    `;
+
+    askWikidata(bestPictureQuestion)
+      .then(rows => {
+        // Tidy up each result into a simple object
+        const films = rows.map(item => {
+          const year = item.year ? Number(item.year.value) : null;
+          const ceremonyText = item.ceremony ? item.ceremony.value : "";
+          return {
+            title: item.filmLabel.value,
+            year: year,
+            imdbId: item.imdbId ? item.imdbId.value : "",
+            ceremonyNumber: parseInt(ceremonyText) || (year ? year - 1927 : 0)
+          };
+        });
+
+        // Newest winners at the top, sorted by the year shown on each row
+        films.sort((a, b) => ((b.year || 0) - (a.year || 0)) || (b.ceremonyNumber - a.ceremonyNumber));
+
+        // Group the films by decade: 2025 goes in 2020, 1994 goes in 1990, etc.
+        const decades = {};
+        films.forEach(film => {
+          const decade = Math.floor((film.year || 0) / 10) * 10;
+          if (!decades[decade]) decades[decade] = [];
+          decades[decade].push(film);
+        });
+
+        // Build one chapter per decade, newest decade first
+        const decadeList = Object.keys(decades).sort((a, b) => b - a);
+
+        const html = decadeList.map((decade, i) => {
+          const rows = decades[decade].map(film => {
+            const inside = `
+              <span class="year">${film.year ?? ""}
+                <span class="ceremony">${ordinal(film.ceremonyNumber)} Oscars</span>
+              </span>
+              <span class="title">${safe(film.title)}</span>
+            `;
+            // If we know the IMDb ID, the row becomes a button that opens the movie card
+            return film.imdbId
+              ? `<button class="film plain-button" data-movie="${safe(film.imdbId)}">${inside}</button>`
+              : `<div class="film">${inside}</div>`;
+          }).join("");
+
+          return `
+            <section>
+              <div class="card">
+                <p class="chapter-num">Chapter ${chapterWords[i] || i + 1}</p>
+                <h2>The ${decade}s</h2>
+              </div>
+              <div class="wrap films">${rows}</div>
+            </section>
+          `;
+        }).join("");
+
+        document.getElementById("list").innerHTML = html;
+
+        const newest = films[0].title;
+        const oldest = films[films.length - 1].title;
+        document.getElementById("intro").textContent =
+          `${films.length} winners in ${decadeList.length} chapters, from ${newest} back to ${oldest}. Tap any title for the full story, or search for any movie.`;
+      })
+      .catch(() => {
+        document.getElementById("list").innerHTML =
+          `<p class="wrap status note">Couldn't reach Wikidata. Check your connection and reload the page.</p>`;
+      });
+
+
+    // =====================================================================
+    // 4. SEARCH
+    // =====================================================================
+    const results = document.getElementById("results");
+
+    document.getElementById("search").addEventListener("submit", event => {
+      event.preventDefault();   // stops the page from reloading
+      const words = document.getElementById("query").value.trim();
+      if (!words) return;
+
+      if (!keyIsReady) { results.innerHTML = needKeyMessage; return; }
+
+      results.innerHTML = `<p class="note">Searching…</p>`;
+
+      askOmdb({ s: words, type: "movie" })
+        .then(data => {
+          if (data.Response === "False") {
+            results.innerHTML = data.Error === "Movie not found!"
+              ? `<p class="note">No movies found for "${safe(words)}". Check the spelling or try fewer words.</p>`
+              : `<p class="note">OMDb says: ${safe(data.Error)}</p>`;
+            return;
+          }
+          // One poster tile per match
+          results.innerHTML = data.Search.map(movie => `
+            <button class="plain-button" data-movie="${safe(movie.imdbID)}">
+              ${poster(movie.Poster, movie.Title)}
+              <span class="result-title">${safe(movie.Title)}</span>
+              <span class="result-year">${safe(movie.Year)}</span>
+            </button>
+          `).join("");
+        })
+        .catch(() => {
+          results.innerHTML = `<p class="note">Search isn't responding. Check your connection and try again.</p>`;
+        });
+    });
+
+
+    // =====================================================================
+    // 5. THE MOVIE CARD
+    // =====================================================================
+    const panel = document.getElementById("panel");
+    const panelContent = document.getElementById("panel-content");
+    const closeButton = document.getElementById("close");
+    let lastClicked = null;
+
+    // Any click on something with data-movie opens that movie's card
+    document.addEventListener("click", event => {
+      const trigger = event.target.closest("[data-movie]");
+      if (trigger) {
+        lastClicked = trigger;
+        openMovie(trigger.dataset.movie);
+      }
+    });
+
+    function openMovie(imdbId) {
+      panel.hidden = false;
+      document.body.style.overflow = "hidden";   // stop the page behind from scrolling
+      closeButton.focus();
+
+      if (!keyIsReady) { panelContent.innerHTML = needKeyMessage; return; }
+
+      panelContent.innerHTML = `<p class="note" style="margin-top:40px">Loading…</p>`;
+
+      // Ask OMDb and Wikidata at the same time, then build the card
+      Promise.all([
+        askOmdb({ i: imdbId, plot: "short" }),
+        getOscars(imdbId).catch(() => null)
+      ]).then(([movie, oscars]) => {
+        panelContent.innerHTML = movieCard(movie, oscars);
+      }).catch(() => {
+        panelContent.innerHTML = `<p class="note" style="margin-top:40px">Couldn't load this movie. Check your connection and try again.</p>`;
+      });
+    }
+
+    function closeMovie() {
+      panel.hidden = true;
+      document.body.style.overflow = "";
+      if (lastClicked) lastClicked.focus();
+    }
+
+    closeButton.addEventListener("click", closeMovie);
+    panel.addEventListener("click", event => { if (event.target === panel) closeMovie(); });
+    document.addEventListener("keydown", event => { if (event.key === "Escape" && !panel.hidden) closeMovie(); });
+
+    // Ask Wikidata which Oscars this movie won and was nominated for, and who received them
+    function getOscars(imdbId) {
+      const question = `
+        SELECT ?status ?awardName (GROUP_CONCAT(DISTINCT ?personName; separator=", ") AS ?people) WHERE {
+          ?film wdt:P345 "${imdbId}" .
+          { ?film p:P166 ?statement . ?statement ps:P166 ?award . BIND("won" AS ?status) }
+          UNION
+          { ?film p:P1411 ?statement . ?statement ps:P1411 ?award . BIND("nominated" AS ?status) }
+          ?award rdfs:label ?awardName .
+          FILTER(LANG(?awardName) = "en" && STRSTARTS(STR(?awardName), "Academy Award for"))
+          OPTIONAL {
+            ?statement pq:P1346|pq:P2453 ?person .
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". ?person rdfs:label ?personName . }
+          }
+        }
+        GROUP BY ?status ?awardName
+      `;
+
+      return askWikidata(question).then(rows => {
+        const won = [];
+        const nominated = [];
+        rows.forEach(row => {
+          const item = {
+            category: row.awardName.value.replace("Academy Award for ", ""),
+            people: row.people ? row.people.value : ""
+          };
+          if (row.status.value === "won") won.push(item);
+          else nominated.push(item);
+        });
+
+        // Best Picture first, then everything else A to Z
+        const order = (a, b) =>
+          (b.category === "Best Picture") - (a.category === "Best Picture") || a.category.localeCompare(b.category);
+        won.sort(order);
+        nominated.sort(order);
+
+        // Don't list a category under "Nominated" if the movie won it
+        const wonCategories = new Set(won.map(w => w.category));
+        return { won, nominated: nominated.filter(n => !wonCategories.has(n.category)) };
+      });
+    }
+
+    // Builds the HTML for one movie
+    function movieCard(movie, oscars) {
+      if (movie.Response === "False") {
+        return `<p class="note" style="margin-top:40px">Couldn't load this movie. OMDb says: ${safe(movie.Error)}</p>`;
+      }
+
+      // The three scores
+      const ratings = movie.Ratings || [];
+      const findRating = source => (ratings.find(r => r.Source === source) || {}).Value || "";
+      const scores = [
+        { source: "IMDb", value: clean(movie.imdbRating) },
+        { source: "Rotten Tomatoes", value: findRating("Rotten Tomatoes") },
+        { source: "Metacritic", value: clean(movie.Metascore) }
+      ].filter(s => s.value);
+
+      const facts = [movie.Year, movie.Rated, movie.Runtime, movie.Genre].map(clean).filter(Boolean);
+
+      return `
+        <div class="movie">
+          <div>${poster(movie.Poster, movie.Title)}</div>
+          <div>
+            <h2 class="movie-title">${safe(movie.Title)}</h2>
+            <div class="facts">${facts.map(f => `<span>${safe(f)}</span>`).join("")}</div>
+
+            <div class="scores">
+              ${scores.map(s => `
+                <div class="score">
+                  <span class="score-num">${safe(s.value.replace("/100", ""))}</span>
+                  <span class="score-source">${s.source}</span>
+                </div>`).join("")}
+            </div>
+
+            ${clean(movie.Plot) ? `<p class="plot">${safe(movie.Plot)}</p>` : ""}
+
+            <p class="credits">
+              ${clean(movie.Director) ? `<b>Directed by</b> ${safe(movie.Director)}<br>` : ""}
+              ${clean(movie.Writer) ? `<b>Written by</b> ${safe(movie.Writer)}<br>` : ""}
+              ${clean(movie.Actors) ? `<b>Starring</b> ${safe(movie.Actors)}` : ""}
+            </p>
+          </div>
+        </div>
+
+        <section class="oscars">
+          <h3>The Oscars</h3>
+          ${oscarList(oscars)}
+          ${clean(movie.Awards) ? `<p class="all-awards">All awards: ${safe(movie.Awards)}</p>` : ""}
+        </section>
+      `;
+    }
+
+    // Builds the "Won" and "Nominated" lists
+    function oscarList(oscars) {
+      if (!oscars) return `<p class="note" style="margin-top:16px">Couldn't load the Oscar details right now. Try again in a minute.</p>`;
+      if (!oscars.won.length && !oscars.nominated.length) {
+        return `<p class="note" style="margin-top:16px">No Oscar wins or nominations on record.</p>`;
+      }
+
+      const list = items => `<ul>${items.map(item => `
+        <li>
+          <span class="category">${safe(item.category)}</span>
+          ${item.people ? `<span class="who">${safe(item.people)}</span>` : ""}
+        </li>`).join("")}</ul>`;
+
+      return `
+        ${oscars.won.length ? `<h4 class="won">Won ${oscars.won.length}</h4>${list(oscars.won)}` : ""}
+        ${oscars.nominated.length ? `<h4>Also nominated for ${oscars.nominated.length}</h4>${list(oscars.nominated)}` : ""}
+      `;
+    }
+  </script>
+</body>
+</html>
