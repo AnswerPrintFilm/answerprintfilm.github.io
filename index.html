@@ -1946,6 +1946,11 @@
             }).catch(() => hero.classList.add("no-image"));
             fillAwards(awards, film.imdb, film.wikidata, thisFilm);
             fillSpecs(specs, thisFilm);
+            // Points the "For families" card straight at the film's review when it can
+            images.then(found => reviewLink(movie, found.tmdb)).then(link => {
+              const card = document.getElementById("family-guide");
+              if (thisFilm === openCount && card) card.href = link;
+            }).catch(() => {});
           });
         })
         .catch(() => {
@@ -1995,19 +2000,16 @@
         });
     }
 
-    // Adds the format details to the open page, if Wikidata has any.
-    // Nearly every film has a color listed, so that alone doesn't count.
+    // Adds the format details to the open page, if Wikidata has any
     function fillSpecs(specs, thisFilm) {
       specs
         .then(found => {
           if (thisFilm !== openCount) return;
           if (!found.format.length && !found.camera.length && !found.ratio.length) return;
-          const color = joinNames(found.color);
           const rows = [
             ["Shot on", joinNames(found.format)],
             ["Camera", joinNames(found.camera)],
-            ["Aspect ratio", joinNames(found.ratio)],
-            ["Color", color.charAt(0).toUpperCase() + color.slice(1)]
+            ["Aspect ratio", joinNames(found.ratio)]
           ].filter(([, value]) => value);
           document.getElementById("specs").innerHTML = `
             <h4 class="specs-title">Format</h4>
@@ -2031,28 +2033,27 @@
     }
 
     // How the film was made, as far as Wikidata knows: the film it was shot on,
-    // the camera, the aspect ratio, and color. Saved for a week.
+    // the camera, and the aspect ratio. Saved for a week.
     function getSpecs(imdbId, wikidataId) {
-      const saveKey = "answer-print-specs-1-" + imdbId;
+      const saveKey = "answer-print-specs-2-" + imdbId;
       const saved = remember.get(saveKey, 7);
       if (saved) return Promise.resolve(saved);
       return findWikidataId(imdbId, wikidataId)
         .then(id => !id ? [] : askWikidata(`SELECT ?kind ?valueLabel WHERE {
-          VALUES (?property ?kind) { (wdt:P3803 "format") (wdt:P4082 "camera") (wdt:P2061 "ratio") (wdt:P462 "color") }
+          VALUES (?property ?kind) { (wdt:P3803 "format") (wdt:P4082 "camera") (wdt:P2061 "ratio") }
           wd:${id} ?property ?value .
           SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
         }`, 15))
         .then(rows => {
-          const specs = { format: [], camera: [], ratio: [], color: [] };
+          const specs = { format: [], camera: [], ratio: [] };
           rows.forEach(row => {
             const value = row.valueLabel ? row.valueLabel.value : "";
             const list = specs[row.kind.value];
             if (list && value && !/^Q\d+$/.test(value) && !list.includes(value)) list.push(value);
           });
-          // Widest aspect ratio first, and "color" before "black-and-white"
+          // Widest aspect ratio first
           const width = ratio => { const [w, h] = ratio.split(":").map(Number); return h ? w / h : 0; };
           specs.ratio.sort((a, b) => width(b) - width(a));
-          specs.color.sort((a, b) => (a === "color" ? -1 : b === "color" ? 1 : 0));
           remember.set(saveKey, specs);
           return specs;
         });
@@ -2167,13 +2168,14 @@
     }
 
     // A card that opens the film's Common Sense Media review in a new tab, for parents.
-    // The box on the left shows the film's official rating when it has one.
+    // The box on the left shows the film's official rating when it has one. The card starts
+    // out pointing at Common Sense Media's search, then switches to the review itself
+    // once reviewLink (below) has worked out where it is.
     function familyGuide(movie) {
       const rating = clean(movie.Rated);
       const badge = /^(G|PG|PG-13|R|NC-17)$/.test(rating) ? `<span class="family-rating">${safe(rating)}</span>` : "";
-      const url = "https://www.commonsensemedia.org/search/" + encodeURIComponent(movie.Title);
       return `
-        <a class="family-guide" href="${url}" target="_blank" rel="noopener">
+        <a class="family-guide" id="family-guide" href="${reviewSearch(movie)}" target="_blank" rel="noopener">
           ${badge}
           <span class="family-text">
             <span class="family-label">For families</span>
@@ -2182,6 +2184,62 @@
           </span>
           <svg class="family-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>
         </a>`;
+    }
+
+    // Common Sense Media's search results for the film's title
+    const reviewSearch = movie => "https://www.commonsensemedia.org/search/" + encodeURIComponent(movie.Title);
+
+    // Common Sense Media keeps each review at an address made from the film's title, like
+    // /movie-reviews/spider-man-across-the-spider-verse. This makes that last part.
+    function reviewSlug(title) {
+      return title
+        .replace(/\s+or\b[:,]?\s*\(.*\)\s*$/i, "")          // "Birdman or (The Unexpected Virtue of Ignorance)" is just "birdman"
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")   // "Amélie" becomes "amelie"
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/['’.]/g, "")                             // "Schindler's List" becomes "schindlers-list"
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    // Where the "For families" card should go. Saved for a week.
+    //  - If other films share this title (remakes like Dune or The Lion King), Common Sense
+    //    Media's addresses for them can't be predicted, so the card opens their search.
+    //  - Well-known films go straight to their review.
+    //  - Lesser-known films go straight there only if the Internet Archive has seen that page,
+    //    because Common Sense Media hasn't reviewed every older or smaller film.
+    function reviewLink(movie, tmdbId) {
+      const search = reviewSearch(movie);
+      const slug = reviewSlug(movie.Title);
+      if (!hasTmdb || !tmdbId || !slug) return Promise.resolve(search);
+      const saveKey = "answer-print-review-1-" + tmdbId;
+      const saved = remember.get(saveKey, 7);
+      if (saved) return Promise.resolve(saved);
+
+      const review = "https://www.commonsensemedia.org/movie-reviews/" + slug;
+      return askTmdb("/movie/" + tmdbId)
+        .then(film => askTmdb("/search/movie", { query: film.title }).then(found => {
+          const votes = film.vote_count || 0;
+          const wellKnown = votes >= 1000;
+          // Another film with the same title counts if enough people have rated it on TMDB
+          const enough = wellKnown ? Math.max(50, votes * 0.05) : 10;
+          const shared = (found.results || []).some(other =>
+            other.id !== film.id && simple(other.title) === simple(film.title) && (other.vote_count || 0) >= enough);
+          if (shared) return search;
+          if (wellKnown) return review;
+          return seenByArchive(review).then(seen => (seen ? review : search));
+        }))
+        .then(link => { remember.set(saveKey, link); return link; })
+        .catch(() => search);   // if something didn't answer, use the search for now and try again next time
+    }
+
+    // Whether the Internet Archive has saved a copy of a page, which shows the page is real
+    function seenByArchive(url) {
+      const ask = "https://archive.org/wayback/available?url=" + encodeURIComponent(url.replace(/^https:\/\//, ""));
+      return fetchWithLimit(ask, 12).then(data => {
+        const copy = (data.archived_snapshots || {}).closest;
+        return Boolean(copy) && String(copy.status) === "200";
+      });
     }
 
     // Builds the "Won" and "Also nominated" lists
